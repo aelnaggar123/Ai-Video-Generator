@@ -2,49 +2,56 @@ import streamlit as st
 from google import genai
 import requests
 
-# ضبط إعدادات الصفحة
+# Page Configuration
 st.set_page_config(page_title="AI Video Studio", page_icon="🎬", layout="wide")
 
-st.title("🎬 مولد محتوى الفيديوهات الذكي (AI Video Generator)")
-st.caption("أداة توليد السكربتات والصوتيات ومقاطع الفيديو أوتوماتيكياً")
+# Main Title & Subtitle
+st.title("🎬 AI Video Content Studio")
+st.caption("Automated Scriptwriting, Scene Prompts & Production Pipeline")
 
-# الشريط الجانبي لإدخال المفاتيح (API Keys)
-st.sidebar.header("🔑 إعدادات المفاتيح (API Keys)")
-gemini_key = st.sidebar.text_input("Gemini API Key", type="password", help="احصل عليه مجاناً من Google AI Studio")
-eleven_key = st.sidebar.text_input("ElevenLabs API Key (اختياري)", type="password")
+# Sidebar Configuration
+st.sidebar.header("🔑 API Credentials")
+gemini_key = st.sidebar.text_input("Gemini API Key", type="password", help="Get your free key from Google AI Studio")
+eleven_key = st.sidebar.text_input("ElevenLabs API Key (Optional)", type="password", help="For AI voice generation")
 
-# واجهة المدخلات الرئيسية
+# Input Layout
 col1, col2 = st.columns([2, 1])
 
 with col1:
-    topic = st.text_input("💡 فكرة الفيديو أو الموضوع:", placeholder="مثال: قصة نجاح شركة أبل في 3 دقائق")
-    style = st.selectbox("🎭 نبرة السكربت:", ["تشويقي وحماسي", "تعليمي ومبسط", "قصصي ومشرق", "احترافي ورسمي"])
+    topic = st.text_input("💡 Video Topic / Idea:", placeholder="e.g., The Untold Story of Apple in 3 Minutes")
+    style = st.selectbox(
+        "🎭 Tone & Style:",
+        ["Engaging & Dramatic", "Educational & Simple", "Storytelling & Inspiring", "Professional & Formal", "Fast-Paced & Energetic"]
+    )
 
 with col2:
-    duration = st.slider("⏱️ مدة الفيديو التقديرية (بالدقائق):", 1, 10, 3)
+    duration = st.slider("⏱️ Target Duration (Minutes):", 1, 10, 3)
 
-generate_btn = st.button("🚀 إنشاء السكربت والخطة", type="primary", use_container_width=True)
+generate_btn = st.button("🚀 Generate Script & Production Plan", type="primary", use_container_width=True)
 
+# Main Generation Logic
 if generate_btn:
     if not gemini_key:
-        st.error("⚠️ يرجى إدخال Gemini API Key في الشريط الجانبي أولاً للبدء!")
+        st.error("⚠️ Please enter your Gemini API Key in the sidebar first!")
     elif not topic:
-        st.warning("⚠️ يرجى كتابة فكرة أو موضوع الفيديو!")
+        st.warning("⚠️ Please provide a video topic or idea!")
     else:
-        with st.spinner("جاري توليد السكربت والخطة البصرية باستخدام الذكاء الاصطناعي..."):
+        with st.spinner("Generating script and visual direction with Gemini AI..."):
             try:
-                # الاتصال بـ Gemini API
+                # Initialize Gemini API Client
                 client = genai.Client(api_key=gemini_key)
                 
                 prompt = f"""
-                أنت خبير محتوى يوتيوب متمرس. قم بكتابة خطة وفيديو كامل لموضوع: '{topic}'.
-                المدة المطلوبة: {duration} دقائق.
-                النبرة: {style}.
-                
-                يرجى تقديم الإجابة بأسلوب منظم يحتوي على:
-                1. عنوان جذاب للفيديو (Hook Title)
-                2. نص السكربت الصوتي (Voiceover Script) مقسم لفقرات
-                3. وصف بصري لكل مشهد (Visual Prompts/Stock Footage Ideas)
+                You are an expert YouTube content creator and scriptwriter. 
+                Create a comprehensive YouTube video blueprint for the topic: '{topic}'.
+                Target Duration: {duration} minutes.
+                Tone & Style: {style}.
+
+                Structure your output clearly with the following sections:
+                1. 🎯 Catchy Titles & Clickable Hook Options
+                2. 🎙️ Complete Voiceover Script (timestamps and scene-by-scene breakdown)
+                3. 🎥 Visual Prompts & B-Roll Ideas (detailed prompts for stock footage or AI image generators)
+                4. 📌 Suggested YouTube Tags & SEO Keywords
                 """
                 
                 response = client.models.generate_content(
@@ -52,9 +59,9 @@ if generate_btn:
                     contents=prompt,
                 )
                 
-                st.success("✨ تم إنشاء السكربت بنجاح!")
+                st.success("✨ Script & Blueprint Generated Successfully!")
                 st.markdown("---")
                 st.markdown(response.text)
                 
             except Exception as e:
-                st.error(f"حدث خطأ أثناء الاتصال بالخدمة: {e}")
+                st.error(f"Error connecting to service: {e}")
