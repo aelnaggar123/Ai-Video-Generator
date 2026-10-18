@@ -12,15 +12,36 @@ from PIL import Image, ImageDraw
 st.set_page_config(page_title="AI Viral Video Studio Pro", page_icon="🎬", layout="wide")
 
 st.title("🎬 AI Viral Video Studio (Pro Engine)")
-st.caption("AI-Generated Visuals, Precise Duration Control, High-CTR Hooks & Advanced SEO Tags.")
+st.caption("Multiple Voice Accents, Multi-Scene AI Visuals, Precise Duration Control & High-CTR SEO.")
 
 # Initialize Session State
 if "generated_data" not in st.session_state:
     st.session_state.generated_data = None
 
 # Sidebar Configuration
-st.sidebar.header("🔑 API Credentials")
+st.sidebar.header("🔑 API & Voice Settings")
 gemini_key = st.sidebar.text_input("Gemini API Key", type="password", help="Get your free key from Google AI Studio")
+
+# Voice Accent Selection
+voice_option = st.sidebar.selectbox(
+    "🎙️ Voice Accent & Style:",
+    [
+        "🇺🇸 US Voice (Standard Energetic)",
+        "🇬🇧 UK Voice (Dramatic / Deep)",
+        "🇦🇺 Australian Voice (Casual / Deep)",
+        "🇨🇦 Canadian Voice (Smooth)",
+        "🇮🇳 Indian Accent (Fast Tech)"
+    ]
+)
+
+# Map UI option to gTTS tld parameter
+tld_map = {
+    "🇺🇸 US Voice (Standard Energetic)": "com",
+    "🇬🇧 UK Voice (Dramatic / Deep)": "co.uk",
+    "🇦🇺 Australian Voice (Casual / Deep)": "com.au",
+    "🇨🇦 Canadian Voice (Smooth)": "ca",
+    "🇮🇳 Indian Accent (Fast Tech)": "co.in"
+}
 
 if st.sidebar.button("🔄 Start New Project", use_container_width=True):
     st.session_state.generated_data = None
@@ -30,7 +51,7 @@ if st.sidebar.button("🔄 Start New Project", use_container_width=True):
 col1, col2 = st.columns([2, 1])
 
 with col1:
-    topic = st.text_input("💡 Video Topic / Core Idea:", value="Tesla Flying Roadster SpaceX Package", placeholder="e.g. Elon's Flying Car")
+    topic = st.text_input("💡 Video Topic / Core Idea:", value="Tesla’s Flying Car: Pure Genius or Billionaire Marketing Fraud?", placeholder="e.g. Elon's Flying Car")
     style = st.selectbox(
         "🎭 Tone & Style:",
         ["Fast-Paced & Energetic", "Engaging & Dramatic", "Educational & Simple", "Storytelling & Inspiring"]
@@ -60,16 +81,15 @@ if generate_btn:
             is_short = (video_format == "YouTube Short (30-59 sec)")
             width, height = (720, 1280) if is_short else (1280, 720)
             
-            # Precise word count calculation for exact duration match (~140 words per minute)
             target_words = int(duration * 60 * 2.3) if is_short else int(duration * 60 * 2.2)
             
-            # Step 1: Generate High-CTR Hooks, Precise Script, & Rich Tags via Gemini
-            status_box.info("📝 Step 1/3: Crafting Short High-CTR Hooks & Rich SEO Tags...")
+            # Step 1: Generate Content via Gemini
+            status_box.info("📝 Step 1/3: Crafting High-CTR Hooks, Script & SEO Tags...")
             url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-3.8-flash:generateContent?key={gemini_key}"
             
             prompt = f"""
             Act as a top YouTube growth hacker. Create a viral video production package for: '{topic}'.
-            Tone: {style}. Target word count strictly around {target_words} words to match duration.
+            Tone: {style}. Target word count strictly around {target_words} words.
 
             Return JSON format strictly as follows (no markdown wrapping, no extra text):
             {{
@@ -79,7 +99,7 @@ if generate_btn:
                     "Short punchy hook 3 (Max 6-8 words)"
                 ],
                 "script": "The full spoken voiceover narration text matching the target word count...",
-                "tags": "comma separated SEO tags, trending keywords, specific phrases related to topic, YouTube metadata tags (at least 25 high-performing tags)"
+                "tags": "comma separated SEO tags, trending keywords, specific phrases related to topic"
             }}
             """
             
@@ -101,27 +121,56 @@ if generate_btn:
                 
             data = json.loads(raw_text)
 
-            # Step 2: Voiceover Generation & Precise Duration Matching
-            status_box.info("🎙️ Step 2/3: Generating Optimized Voiceover Audio...")
+            # Step 2: Voiceover Generation with Selected Accent
+            status_box.info(f"🎙️ Step 2/3: Generating Voiceover with {voice_option}...")
             audio_raw = "raw_voice.mp3"
             audio_final = "final_voice.mp3"
             
-            tts = gTTS(text=data['script'], lang='en', slow=False)
+            selected_tld = tld_map.get(voice_option, "com")
+            tts = gTTS(text=data['script'], lang='en', tld=selected_tld, slow=False)
             tts.save(audio_raw)
 
-            # Minor tempo adjustment if needed to hit exact requested window
-            cmd_audio = f"ffmpeg -y -i {audio_raw} -filter:a 'atempo=1.15' {audio_final}"
+            # Speedup audio slightly for better energy
+            cmd_audio = f"ffmpeg -y -i {audio_raw} -filter:a 'atempo=1.20' {audio_final}"
             subprocess.run(cmd_audio, shell=True, check=True)
 
-            # Get exact audio duration using ffprobe
+            # Get exact audio duration
             probe_cmd_final = f"ffprobe -v error -show_entries format=duration -of default=noprint_wrappers=1:nokey=1 {audio_final}"
             final_audio_dur = float(subprocess.check_output(probe_cmd_final, shell=True).decode('utf-8').strip())
 
-            # Step 3: AI Visual Generation & Exact Video Assembly
-            status_box.info("🎥 Step 3/3: Fetching AI Visual Assets & Rendering Precise MP4 Video...")
+            # Step 3: Multi-Scene AI Visual Generation & Video Assembly
+            status_box.info("🎥 Step 3/3: Fetching Multiple AI Visual Scenes & Rendering Video...")
             
+            # Fetch 3 distinct AI generated images to switch scenes during video
+            scenes = []
+            keywords = [topic, f"{topic} futuristic concept", f"{topic} close up detailed action"]
+            
+            for idx, kw in enumerate(keywords):
+                cleaned_kw = kw.replace(" ", "%20").replace(":", "").replace("?", "")
+                img_url = f"https://image.pollinations.ai/prompt/Cinematic%20photorealistic%20{cleaned_kw}%208k?width={width}&height={height}&nologo=true"
+                
+                scene_file = f"scene_{idx}.jpg"
+                try:
+                    headers_req = {'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64)'}
+                    r = requests.get(img_url, headers=headers_req, timeout=8)
+                    if r.status_code == 200 and len(r.content) > 1000:
+                        with open(scene_file, "wb") as f:
+                            f.write(r.content)
+                        img_obj = Image.open(scene_file).convert("RGB")
+                        scenes.append(img_obj)
+                except Exception:
+                    pass
+
+            # Fallback high-quality vibrant backdrop if API had issues
+            if not scenes:
+                fallback_img = Image.new('RGB', (width, height), color=(20, 30, 50))
+                d_fall = ImageDraw.Draw(fallback_img)
+                d_fall.rectangle([(0, 0), (width, height)], fill=(15, 23, 42))
+                scenes.append(fallback_img)
+
             fps = 24
             total_frames = int(fps * final_audio_dur)
+            frames_per_scene = max(1, total_frames // len(scenes))
             
             video_no_audio = "temp_video.mp4"
             final_mp4 = "final_generated_video.mp4"
@@ -129,45 +178,32 @@ if generate_btn:
             fourcc = cv2.VideoWriter_fourcc(*'mp4v')
             out = cv2.VideoWriter(video_no_audio, fourcc, fps, (width, height))
             
-            # Fetch AI Image generated for the topic via Pollinations AI
-            headers_img = {'User-Agent': 'Mozilla/5.0'}
-            img_url = f"https://image.pollinations.ai/prompt/Cinematic%20photorealistic%20{topic.replace(' ', '%20')}%20futuristic%208k%20hyperdetailed?width={width}&height={height}&nologo=true"
-            
-            try:
-                img_response = requests.get(img_url, headers=headers_img, timeout=10)
-                if img_response.status_code == 200:
-                    with open("ai_scene.jpg", "wb") as f:
-                        f.write(img_response.content)
-                    base_image = Image.open("ai_scene.jpg").convert("RGB")
-                else:
-                    raise Exception("Fallback image")
-            except:
-                base_image = Image.new('RGB', (width, height), color=(10, 15, 30))
-
-            # Render frame sequence matching exact audio duration down to the frame
+            # Render video sequence switching scenes seamlessly
             for frame_num in range(total_frames):
-                frame_img = base_image.copy()
-                draw = ImageDraw.Draw(frame_img)
+                scene_idx = min(frame_num // frames_per_scene, len(scenes) - 1)
+                active_scene = scenes[scene_idx].copy()
                 
-                # Add overlay for text readability
-                draw.rectangle([(0, height - 250), (width, height)], fill=(0, 0, 0))
+                draw = ImageDraw.Draw(active_scene)
                 
-                # Render clean title overlay
-                draw.text((60, height - 180), topic[:45].upper(), fill=(255, 255, 255))
-                draw.text((60, height - 120), "▶ AI Generated Visuals & Narration", fill=(56, 189, 248))
+                # Dark overlay banner at bottom for clear captions/title
+                draw.rectangle([(0, height - 220), (width, height)], fill=(0, 0, 0))
                 
-                temp_frame_path = f"frame_{frame_num % 5}.png"
-                frame_img.save(temp_frame_path)
+                # Display title & status
+                draw.text((50, height - 160), topic[:42].upper(), fill=(255, 255, 255))
+                draw.text((50, height - 100), f"▶ AI Scene {scene_idx + 1} | Narration Active", fill=(56, 189, 248))
+                
+                temp_frame_path = "temp_render_frame.png"
+                active_scene.save(temp_frame_path)
                 cv_img = cv2.imread(temp_frame_path)
                 out.write(cv_img)
                 
             out.release()
 
-            # Merge Precise Video & Exact Audio
+            # Merge Video & Audio
             cmd_merge = f"ffmpeg -y -i {video_no_audio} -i {audio_final} -c:v copy -c:a aac -shortest {final_mp4}"
             subprocess.run(cmd_merge, shell=True, check=True)
 
-            # Save into Session State so data stays after interaction
+            # Store in Session State
             st.session_state.generated_data = {
                 "hooks": data['hooks'],
                 "script": data['script'],
@@ -177,7 +213,7 @@ if generate_btn:
                 "topic": topic,
                 "duration": final_audio_dur
             }
-            status_box.success(f"🎉 Production Complete! Duration matched precisely: {final_audio_dur:.1f} seconds.")
+            status_box.success(f"🎉 Production Complete! Video rendered with multiple AI scenes ({final_audio_dur:.1f}s).")
 
         except Exception as e:
             st.error(f"An error occurred: {e}")
