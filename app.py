@@ -1,34 +1,33 @@
 import streamlit as st
 import requests
 import json
-import os
+import base64
 from gtts import gTTS
-from moviepy import TextClip, AudioFileClip, CompositeVideoClip, ColorClip
 
 # Page Configuration
-st.set_page_config(page_title="AI Video Studio - Full Auto", page_icon="🎬", layout="wide")
+st.set_page_config(page_title="AI Video Content Studio", page_icon="🎬", layout="wide")
 
-st.title("🎬 Fully Automated AI Video Generator")
-st.caption("Generate Script, Voiceover, Visuals & Assembled MP4 Video in One Click!")
+st.title("🎬 AI Video Automation Studio")
+st.caption("Generate Script, Audio Voiceover, Visual Prompts & SEO Metadata instantly!")
 
-# Sidebar Configuration
+# Sidebar Credentials
 st.sidebar.header("🔑 API Credentials")
 gemini_key = st.sidebar.text_input("Gemini API Key", type="password", help="Get your free key from Google AI Studio")
 
-# Input Layout
+# Layout Inputs
 col1, col2 = st.columns([2, 1])
 
 with col1:
-    topic = st.text_input("💡 Video Topic / Idea:", placeholder="e.g., The Untold Story of Apple in 3 Minutes")
+    topic = st.text_input("💡 Video Topic / Idea:", placeholder="e.g., The Truth Behind Tesla's Flying Roadster")
     style = st.selectbox(
         "🎭 Tone & Style:",
-        ["Engaging & Dramatic", "Educational & Simple", "Storytelling & Inspiring", "Professional & Formal"]
+        ["Engaging & Dramatic", "Educational & Simple", "Storytelling & Inspiring", "Fast-Paced & Energetic"]
     )
 
 with col2:
-    duration = st.slider("⏱️ Target Duration (Minutes):", 1, 5, 1)
+    duration = st.slider("⏱️ Target Duration (Minutes):", 1, 5, 2)
 
-generate_btn = st.button("🚀 Generate Full MP4 Video", type="primary", use_container_width=True)
+generate_btn = st.button("🚀 Generate Script & Audio Voiceover", type="primary", use_container_width=True)
 
 if generate_btn:
     if not gemini_key:
@@ -36,74 +35,60 @@ if generate_btn:
     elif not topic:
         st.warning("⚠️ Please provide a video topic or idea!")
     else:
-        status_box = st.empty()
-        
-        # Step 1: Generate Script
-        status_box.info("📝 Step 1/4: Writing script with Gemini AI...")
-        try:
-            url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-3.8-flash:generateContent?key={gemini_key}"
-            prompt = f"Write a short, high-energy YouTube voiceover script for: '{topic}'. Keep it under {duration*60} seconds. Output ONLY the plain text voiceover words to be spoken, no timestamps, no brackets, no extra formatting."
-            
-            headers = {'Content-Type': 'application/json'}
-            payload = {"contents": [{"parts": [{"text": prompt}]}]}
-            
-            response = requests.post(url, headers=headers, data=json.dumps(payload))
-            result = response.json()
-            
-            if response.status_code != 200:
-                st.error(f"API Error: {result.get('error', {}).get('message', 'Unknown error')}")
-                st.stop()
+        with st.spinner("⚡ Step 1/2: Generating High-Retention Script & Visual Blueprint..."):
+            try:
+                url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-3.8-flash:generateContent?key={gemini_key}"
                 
-            script_text = result['candidates'][0]['content']['parts'][0]['text'].strip()
-            st.success("✅ Script Generated!")
-            with st.expander("Show Raw Script"):
-                st.write(script_text)
+                prompt = f"""
+                You are an expert YouTube content creator. Create a complete viral video blueprint for: '{topic}'.
+                Target Duration: {duration} minutes. Tone: {style}.
 
-            # Step 2: Generate Voiceover Audio
-            status_box.info("🎙️ Step 2/4: Generating AI Voiceover audio...")
-            audio_file = "voiceover.mp3"
-            tts = gTTS(text=script_text, lang='en', slow=False)
-            tts.save(audio_file)
-            st.audio(audio_file)
+                Structure the response clearly into these sections:
+                1. 🎯 Catchy Titles & Clickable Hook Options
+                2. 🎙️ Complete Voiceover Script (Plain text narrative, engaging pacing)
+                3. 🎥 Scene-by-Scene Visual Prompts (Prompts for Midjourney / Runway / Stock footage)
+                4. 📌 Suggested YouTube Tags & SEO Keywords
+                """
 
-            # Step 3: Video Assembly
-            status_box.info("🎥 Step 3/4: Assembling video slides and audio track...")
-            audio_clip = AudioFileClip(audio_file)
-            video_duration = audio_clip.duration
+                headers = {'Content-Type': 'application/json'}
+                payload = {"contents": [{"parts": [{"text": prompt}]}]}
 
-            # Create a stylish dark background
-            bg_clip = ColorClip(size=(1280, 720), color=(15, 23, 42), duration=video_duration)
-            
-            # Add Title Text Overlay
-            txt_clip = TextClip(
-                text=topic.upper(), 
-                font_size=45, 
-                color='white', 
-                size=(1100, 600),
-                method='caption'
-            ).with_duration(video_duration).with_position('center')
+                response = requests.post(url, headers=headers, data=json.dumps(payload))
+                result = response.json()
 
-            # Combine Video + Audio
-            final_clip = CompositeVideoClip([bg_clip, txt_clip]).with_audio(audio_clip)
-            
-            output_video_path = "final_generated_video.mp4"
-            status_box.info("⚡ Step 4/4: Rendering final MP4 file (this may take a minute)...")
-            final_clip.write_videofile(output_video_path, fps=24, codec="libx264", audio_codec="aac")
+                if response.status_code != 200:
+                    st.error(f"API Error: {result.get('error', {}).get('message', 'Unknown error')}")
+                    st.stop()
 
-            status_box.success("🎉 Your Video is Ready!")
-            
-            # Display Final Video
-            st.video(output_video_path)
-            
-            # Download Button
-            with open(output_video_path, "rb") as file:
-                st.download_button(
-                    label="⬇️ Download Ready Video (MP4)",
-                    data=file,
-                    file_name=f"{topic.replace(' ', '_')}.mp4",
-                    mime="video/mp4",
-                    use_container_width=True
-                )
+                script_text = result['candidates'][0]['content']['parts'][0]['text']
 
-        except Exception as e:
-            st.error(f"An error occurred during video creation: {e}")
+                st.success("✨ Script & Production Plan Generated!")
+                st.markdown("---")
+
+                # Step 2: Generate Voiceover
+                st.subheader("🎙️ AI Voiceover Audio (Generated)")
+                with st.spinner("⚡ Step 2/2: Converting Script to Voiceover MP3..."):
+                    # Extract roughly the narration part for gTTS
+                    clean_text_for_audio = topic + ". " + script_text[:1000] # Clean sample preview for audio
+                    tts = gTTS(text=clean_text_for_audio, lang='en', slow=False)
+                    audio_filename = "voiceover.mp3"
+                    tts.save(audio_filename)
+
+                    # Display Audio Player
+                    st.audio(audio_filename)
+
+                    # Download Audio Button
+                    with open(audio_filename, "rb") as file:
+                        st.download_button(
+                            label="⬇️ Download Voiceover (MP3)",
+                            data=file,
+                            file_name=f"{topic.replace(' ', '_')}_voiceover.mp3",
+                            mime="audio/mp3",
+                            use_container_width=True
+                        )
+
+                st.markdown("---")
+                st.markdown(script_text)
+
+            except Exception as e:
+                st.error(f"An error occurred: {e}")
