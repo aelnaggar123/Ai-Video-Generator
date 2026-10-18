@@ -3,7 +3,7 @@ import requests
 import json
 import os
 from gtts import gTTS
-from moviepy.editor import TextClip, AudioFileClip, CompositeVideoClip, ColorClip
+from moviepy import TextClip, AudioFileClip, CompositeVideoClip, ColorClip
 
 # Page Configuration
 st.set_page_config(page_title="AI Video Studio - Full Auto", page_icon="🎬", layout="wide")
@@ -76,16 +76,15 @@ if generate_btn:
             
             # Add Title Text Overlay
             txt_clip = TextClip(
-                topic.upper(), 
-                fontsize=45, 
+                text=topic.upper(), 
+                font_size=45, 
                 color='white', 
-                size=(1100, 600), 
-                method='caption',
-                font='Arial'
-            ).set_duration(video_duration).set_position('center')
+                size=(1100, 600),
+                method='caption'
+            ).with_duration(video_duration).with_position('center')
 
             # Combine Video + Audio
-            final_clip = CompositeVideoClip([bg_clip, txt_clip]).set_audio(audio_clip)
+            final_clip = CompositeVideoClip([bg_clip, txt_clip]).with_audio(audio_clip)
             
             output_video_path = "final_generated_video.mp4"
             status_box.info("⚡ Step 4/4: Rendering final MP4 file (this may take a minute)...")
