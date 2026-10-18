@@ -2,14 +2,17 @@ import streamlit as st
 import requests
 import json
 import os
+import cv2
+import numpy as np
 from gtts import gTTS
 from PIL import Image, ImageDraw, ImageFont
+import subprocess
 
 # Page Configuration
-st.set_page_config(page_title="Fully Automated AI Video Studio", page_icon="🎬", layout="wide")
+st.set_page_config(page_title="AI Video Studio - One Click MP4", page_icon="🎬", layout="wide")
 
-st.title("🎬 Automated In-House AI Video Generator")
-st.caption("Generate Script, AI Voiceover, and Visual Video File directly on your website in 1-Click!")
+st.title("🎬 1-Click AI Video Generator")
+st.caption("Generate Script, AI Voiceover & Assembled MP4 Video Directly on Your Website!")
 
 # Sidebar Configuration
 st.sidebar.header("🔑 API Credentials")
@@ -19,16 +22,16 @@ gemini_key = st.sidebar.text_input("Gemini API Key", type="password", help="Get 
 col1, col2 = st.columns([2, 1])
 
 with col1:
-    topic = st.text_input("💡 Video Topic / Idea:", placeholder="e.g., The Untold Story of Tesla Roadster")
+    topic = st.text_input("💡 Video Topic / Idea:", value="1 Second to 60mph: Inside Tesla’s Insane SpaceX Death Trap")
     style = st.selectbox(
         "🎭 Tone & Style:",
         ["Engaging & Dramatic", "Educational & Simple", "Storytelling & Inspiring", "Fast-Paced & Energetic"]
     )
 
 with col2:
-    duration = st.slider("⏱️ Target Duration (Minutes):", 1, 5, 1)
+    duration = st.slider("⏱️ Target Duration (Minutes):", 1, 3, 1)
 
-generate_btn = st.button("🚀 Build Complete Video In-House", type="primary", use_container_width=True)
+generate_btn = st.button("🚀 Generate Full MP4 Video", type="primary", use_container_width=True)
 
 if generate_btn:
     if not gemini_key:
@@ -39,10 +42,10 @@ if generate_btn:
         status_box = st.empty()
         
         try:
-            # Step 1: Generate Script
-            status_box.info("📝 Step 1/3: Writing professional script with Gemini AI...")
+            # Step 1: Generate Short Script
+            status_box.info("📝 Step 1/3: Generating high-retention script with Gemini AI...")
             url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-3.8-flash:generateContent?key={gemini_key}"
-            prompt = f"Write a short, punchy YouTube voiceover script for: '{topic}'. Tone: {style}. Keep it concise and engaging. Output ONLY the plain text narration words."
+            prompt = f"Write a short, punchy YouTube voiceover script (around 30-45 seconds) for: '{topic}'. Tone: {style}. Output ONLY plain spoken narrative text, no brackets or tags."
             
             headers = {'Content-Type': 'application/json'}
             payload = {"contents": [{"parts": [{"text": prompt}]}]}
@@ -55,57 +58,66 @@ if generate_btn:
                 st.stop()
                 
             script_text = result['candidates'][0]['content']['parts'][0]['text'].strip()
-            st.success("✅ Script Generated!")
+            st.success("✅ Script Written!")
 
-            # Step 2: Generate Voiceover Audio
+            # Step 2: Generate Audio
             status_box.info("🎙️ Step 2/3: Converting script into AI Voiceover (MP3)...")
-            audio_file = "voiceover.mp3"
+            audio_path = "voice.mp3"
             tts = gTTS(text=script_text, lang='en', slow=False)
-            tts.save(audio_file)
-            
-            # Play preview
-            st.audio(audio_file)
+            tts.save(audio_path)
 
-            # Step 3: Generate Visual Graphic Slide (Poster / Video Frame)
-            status_box.info("🎨 Step 3/3: Designing video graphics and rendering output package...")
+            # Step 3: Render Visual Frames & Merge into MP4
+            status_box.info("🎥 Step 3/3: Rendering frames & assembling final MP4 video file...")
             
-            # Create a clean dynamic image frame for the video
-            img = Image.new('RGB', (1280, 720), color=(15, 23, 42)) # Dark tech blue background
-            d = ImageDraw.Draw(img)
+            # Create a cover frame image using Pillow
+            width, height = 1280, 720
+            img = Image.new('RGB', (width, height), color=(15, 23, 42)) # Dark stylish background
+            draw = ImageDraw.Draw(img)
             
-            # Draw Title text onto the image canvas
-            title_text = topic.upper()
-            d.text((100, 300), title_text, fill=(255, 255, 255))
+            # Draw Title & Text
+            draw.text((80, 260), "AI VIDEO GENERATOR", fill=(56, 189, 248))
+            draw.text((80, 320), topic[:45] + ("..." if len(topic) > 45 else ""), fill=(255, 255, 255))
+            draw.text((80, 420), "🎙️ Narrated by AI Engine", fill=(148, 163, 184))
             
-            image_path = "video_cover.png"
-            img.save(image_path)
+            frame_path = "frame.png"
+            img.save(frame_path)
 
-            status_box.success("🎉 All Assets Successfully Created In-House!")
+            # Get Audio Duration via ffprobe or calculation
+            # Generate Silent Video Clip with OpenCV
+            video_no_audio = "temp_video.mp4"
+            final_mp4 = "final_generated_video.mp4"
             
-            # Display assets
-            st.image(image_path, caption="Generated Visual Frame", use_container_width=True)
+            # Read frame and convert for OpenCV
+            cv_img = cv2.imread(frame_path)
+            fps = 24
+            duration_sec = 25 # Default render duration for clip
             
-            # Provide downloadable package bundle (Audio + Script + Frame)
-            st.markdown("### 📦 Your In-House Production Package:")
-            st.text_area("Generated Script Text:", script_text, height=150)
+            fourcc = cv2.VideoWriter_fourcc(*'mp4v')
+            out = cv2.VideoWriter(video_no_audio, fourcc, fps, (width, height))
             
-            with open(audio_file, "rb") as f:
+            for _ in range(fps * duration_sec):
+                out.write(cv_img)
+            out.release()
+
+            # Merge Video & Audio using ffmpeg command line
+            cmd = f"ffmpeg -y -i {video_no_audio} -i {audio_path} -c:v copy -c:a aac -shortest {final_mp4}"
+            subprocess.run(cmd, shell=True, check=True)
+
+            status_box.success("🎉 Your Video is Fully Ready!")
+            st.markdown("---")
+            
+            # Display Final Video Directly on Page
+            st.video(final_mp4)
+            
+            # Download Button for the complete MP4
+            with open(final_mp4, "rb") as f:
                 st.download_button(
-                    label="⬇️ Download Voiceover Audio (MP3)",
+                    label="⬇️ Download Complete Video (MP4)",
                     data=f,
-                    file_name="voiceover.mp3",
-                    mime="audio/mp3",
-                    use_container_width=True
-                )
-                
-            with open(image_path, "img" if False else "rb") as f:
-                st.download_button(
-                    label="⬇️ Download Visual Backdrop (PNG)",
-                    data=f,
-                    file_name="visual_frame.png",
-                    mime="image/png",
+                    file_name=f"AI_Video_{topic[:15].replace(' ', '_')}.mp4",
+                    mime="video/mp4",
                     use_container_width=True
                 )
 
         except Exception as e:
-            st.error(f"An error occurred: {e}")
+            st.error(f"An error occurred during video assembly: {e}")
