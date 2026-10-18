@@ -1,6 +1,6 @@
 import streamlit as st
-from google import genai
 import requests
+import json
 
 # Page Configuration
 st.set_page_config(page_title="AI Video Studio", page_icon="🎬", layout="wide")
@@ -12,7 +12,6 @@ st.caption("Automated Scriptwriting, Scene Prompts & Production Pipeline")
 # Sidebar Configuration
 st.sidebar.header("🔑 API Credentials")
 gemini_key = st.sidebar.text_input("Gemini API Key", type="password", help="Get your free key from Google AI Studio")
-eleven_key = st.sidebar.text_input("ElevenLabs API Key (Optional)", type="password", help="For AI voice generation")
 
 # Input Layout
 col1, col2 = st.columns([2, 1])
@@ -38,8 +37,8 @@ if generate_btn:
     else:
         with st.spinner("Generating script and visual direction with Gemini AI..."):
             try:
-                # Initialize Gemini API Client
-                client = genai.Client(api_key=gemini_key)
+                # Direct API URL using standard gemini-1.5-flash which is open for all free keys
+                url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key={gemini_key}"
                 
                 prompt = f"""
                 You are an expert YouTube content creator and scriptwriter. 
@@ -54,14 +53,23 @@ if generate_btn:
                 4. 📌 Suggested YouTube Tags & SEO Keywords
                 """
                 
-                response = client.models.generate_content(
-                    model='gemini-2.5-flash',
-                    contents=prompt,
-                )
+                headers = {'Content-Type': 'application/json'}
+                payload = {
+                    "contents": [{
+                        "parts": [{"text": prompt}]
+                    }]
+                }
                 
-                st.success("✨ Script & Blueprint Generated Successfully!")
-                st.markdown("---")
-                st.markdown(response.text)
+                response = requests.post(url, headers=headers, data=json.dumps(payload))
+                result = response.json()
+                
+                if response.status_code == 200:
+                    script_text = result['candidates'][0]['content']['parts'][0]['text']
+                    st.success("✨ Script & Blueprint Generated Successfully!")
+                    st.markdown("---")
+                    st.markdown(script_text)
+                else:
+                    st.error(f"API Error: {result.get('error', {}).get('message', 'Unknown error')}")
                 
             except Exception as e:
                 st.error(f"Error connecting to service: {e}")
