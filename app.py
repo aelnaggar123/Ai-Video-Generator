@@ -3,10 +3,9 @@ import requests
 import json
 import os
 import cv2
-import numpy as np
-from gtts import gTTS
-from PIL import Image, ImageDraw, ImageFont
 import subprocess
+from gtts import gTTS
+from PIL import Image, ImageDraw
 
 # Page Configuration
 st.set_page_config(page_title="AI Video Studio - One Click MP4", page_icon="🎬", layout="wide")
@@ -75,14 +74,13 @@ if generate_btn:
             draw = ImageDraw.Draw(img)
             
             # Draw Title & Text
-            draw.text((80, 260), "AI VIDEO GENERATOR", fill=(56, 189, 248))
+            draw.text((80, 260), "AI VIDEO STUDIO", fill=(56, 189, 248))
             draw.text((80, 320), topic[:45] + ("..." if len(topic) > 45 else ""), fill=(255, 255, 255))
             draw.text((80, 420), "🎙️ Narrated by AI Engine", fill=(148, 163, 184))
             
             frame_path = "frame.png"
             img.save(frame_path)
 
-            # Get Audio Duration via ffprobe or calculation
             # Generate Silent Video Clip with OpenCV
             video_no_audio = "temp_video.mp4"
             final_mp4 = "final_generated_video.mp4"
@@ -90,7 +88,7 @@ if generate_btn:
             # Read frame and convert for OpenCV
             cv_img = cv2.imread(frame_path)
             fps = 24
-            duration_sec = 25 # Default render duration for clip
+            duration_sec = 35 # Default render duration
             
             fourcc = cv2.VideoWriter_fourcc(*'mp4v')
             out = cv2.VideoWriter(video_no_audio, fourcc, fps, (width, height))
@@ -99,7 +97,7 @@ if generate_btn:
                 out.write(cv_img)
             out.release()
 
-            # Merge Video & Audio using ffmpeg command line
+            # Merge Video & Audio using ffmpeg
             cmd = f"ffmpeg -y -i {video_no_audio} -i {audio_path} -c:v copy -c:a aac -shortest {final_mp4}"
             subprocess.run(cmd, shell=True, check=True)
 
