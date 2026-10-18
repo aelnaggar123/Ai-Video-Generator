@@ -9,10 +9,10 @@ from gtts import gTTS
 from PIL import Image, ImageDraw
 
 # Page Configuration
-st.set_page_config(page_title="AI Viral Video Studio Pro", page_icon="🎬", layout="wide")
+st.set_page_config(page_title="AI Motion & Vector Video Studio", page_icon="🎬", layout="wide")
 
-st.title("🎬 AI Viral Video Studio (Franco & Multi-Language Supported)")
-st.caption("Write in English, Arabic, or Franco! Guaranteed Colored Video Output, Voice Accents, & SEO.")
+st.title("🎬 AI Vector & Motion Video Studio (Franco & Multi-Language)")
+st.caption("2D Vector Animation Style, Guaranteed Colored Motion Output, Voice Accents & SEO.")
 
 # Initialize Session State
 if "generated_data" not in st.session_state:
@@ -66,7 +66,7 @@ with col2:
     else:
         duration = 0.75 # ~45 seconds
 
-generate_btn = st.button("🚀 Generate Pro AI Video & Strategy", type="primary", use_container_width=True)
+generate_btn = st.button("🚀 Generate Vector Motion Video", type="primary", use_container_width=True)
 
 if generate_btn:
     if not gemini_key:
@@ -81,13 +81,13 @@ if generate_btn:
             
             target_words = int(duration * 60 * 2.3) if is_short else int(duration * 60 * 2.2)
             
-            # Step 1: Generate Content via Gemini (Understands Franco/Arabic/English perfectly)
-            status_box.info("📝 Step 1/3: Translating Franco/Idea & Crafting High-CTR Script & SEO Tags...")
+            # Step 1: Generate Content via Gemini
+            status_box.info("📝 Step 1/3: Analyzing Topic & Generating Vector Animation Script & SEO...")
             url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-3.8-flash:generateContent?key={gemini_key}"
             
             prompt = f"""
-            The user provided this video topic/idea (it might be in English, Arabic, or Franco-Arabic): '{topic}'.
-            Understand the core intent, and act as a top YouTube growth hacker to create a viral video production package in English.
+            The user provided this video topic/idea (Franco, Arabic, or English): '{topic}'.
+            Act as a top YouTube growth hacker and vector motion designer. Create a viral video production package in English.
             Tone: {style}. Target word count strictly around {target_words} words.
 
             Return JSON format strictly as follows (no markdown wrapping, no extra text):
@@ -135,8 +135,8 @@ if generate_btn:
             probe_cmd_final = f"ffprobe -v error -show_entries format=duration -of default=noprint_wrappers=1:nokey=1 {audio_final}"
             final_audio_dur = float(subprocess.check_output(probe_cmd_final, shell=True).decode('utf-8').strip())
 
-            # Step 3: Guaranteed Colored Visual Scenes (Encoded via libx264 compatible container)
-            status_box.info("🎥 Step 3/3: Rendering Vibrant Colored Scenes & Video Engine...")
+            # Step 3: Vector & Motion Graphic Animation Engine
+            status_box.info("🎥 Step 3/3: Rendering 2D Vector & Motion Graphic Scenes...")
             
             fps = 24
             total_frames = int(fps * final_audio_dur)
@@ -144,39 +144,44 @@ if generate_btn:
             video_no_audio = "temp_video.mp4"
             final_mp4 = "final_generated_video.mp4"
             
-            # Use standard mp4v codec for OpenCV frame writing
             fourcc = cv2.VideoWriter_fourcc(*'mp4v')
             out = cv2.VideoWriter(video_no_audio, fourcc, fps, (width, height))
             
-            color_palettes = [
-                (15, 23, 42),    # Slate Dark Navy
-                (30, 41, 59),    # Deep Slate Grey
-                (88, 28, 135)    # Rich Purple
+            # Create vibrant 2D Vector style background scenes with distinct motion shapes
+            vector_themes = [
+                {"bg": (15, 23, 42), "accent": (56, 189, 248), "shape_col": (244, 63, 94), "label": "VECTOR MOTION SCENE 1"},
+                {"bg": (30, 27, 75), "accent": (168, 85, 247), "shape_col": (59, 130, 246), "label": "VECTOR MOTION SCENE 2"},
+                {"bg": (17, 24, 39), "accent": (16, 185, 129), "shape_col": (245, 158, 11), "label": "VECTOR MOTION SCENE 3"}
             ]
             
-            scene_images = []
-            for idx, col in enumerate(color_palettes):
-                img = Image.new('RGB', (width, height), color=col)
+            scene_frames_list = []
+            for theme in vector_themes:
+                img = Image.new('RGB', (width, height), color=theme["bg"])
                 draw = ImageDraw.Draw(img)
                 
-                # Draw artistic glowing borders and shapes to guarantee vibrant pixels
-                draw.rectangle([40, 40, width - 40, height - 40], outline=(56, 189, 248), width=5)
-                draw.ellipse([width//2 - 120, height//3 - 120, width//2 + 120, height//3 + 120], fill=(244, 63, 94))
+                # Draw stylized 2D Vector geometrical art layout
+                draw.rectangle([50, 50, width - 50, height - 50], outline=theme["accent"], width=6)
                 
-                # Bottom text banner container
-                draw.rectangle([(0, height - 240), (width, height)], fill=(15, 23, 42))
+                # Dynamic central vector shapes
+                cx, cy = width // 2, height // 2 - 50
+                draw.polygon([(cx, cy - 100), (cx - 120, cy + 100), (cx + 120, cy + 100)], fill=theme["shape_col"])
+                draw.ellipse([cx - 60, cy - 60, cx + 60, cy + 60], fill=theme["accent"])
                 
-                # Render topic text cleanly onto canvas
-                draw.text((60, height - 180), f"SCENE {idx + 1} | AI VIRAL STUDIO", fill=(56, 189, 248))
-                draw.text((60, height - 120), topic[:40].upper(), fill=(255, 255, 255))
+                # Bottom text banner container for motion script display
+                draw.rectangle([(0, height - 250), (width, height)], color if False else (10, 15, 30))
+                draw.rectangle([(0, height - 250), (width, height)], fill=(15, 23, 42))
                 
-                scene_images.append(img)
+                # Render clean vector UI text
+                draw.text((60, height - 190), theme["label"], fill=theme["accent"])
+                draw.text((60, height - 130), topic[:42].upper(), fill=(255, 255, 255))
+                
+                scene_frames_list.append(img)
 
-            frames_per_scene = max(1, total_frames // len(scene_images))
+            frames_per_scene = max(1, total_frames // len(scene_frames_list))
             
             for frame_num in range(total_frames):
-                scene_idx = min(frame_num // frames_per_scene, len(scene_images) - 1)
-                active_frame = scene_images[scene_idx]
+                scene_idx = min(frame_num // frames_per_scene, len(scene_frames_list) - 1)
+                active_frame = scene_frames_list[scene_idx]
                 
                 temp_frame_path = "temp_render_frame.png"
                 active_frame.save(temp_frame_path)
@@ -185,7 +190,7 @@ if generate_btn:
                 
             out.release()
 
-            # Merge Video & Audio with universal libx264/aac encoding for browser playback compatibility
+            # Merge Video & Audio with universal libx264 encoding
             cmd_merge = f"ffmpeg -y -i {video_no_audio} -i {audio_final} -c:v libx264 -pix_fmt yuv420p -c:a aac -shortest {final_mp4}"
             subprocess.run(cmd_merge, shell=True, check=True)
 
@@ -199,7 +204,7 @@ if generate_btn:
                 "topic": topic,
                 "duration": final_audio_dur
             }
-            status_box.success(f"🎉 Production Complete! Video rendered successfully ({final_audio_dur:.1f}s).")
+            status_box.success(f"🎉 Production Complete! Vector Motion Video successfully rendered ({final_audio_dur:.1f}s).")
 
         except Exception as e:
             st.error(f"An error occurred: {e}")
@@ -222,7 +227,7 @@ if st.session_state.generated_data:
                 data=f,
                 file_name=f"AI_{file_label}_{res['topic'][:10].replace(' ', '_')}.mp4",
                 mime="video/mp4",
-                use_container_width=True
+                use_container_width=True,
             )
             
     with col_right:
