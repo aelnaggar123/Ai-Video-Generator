@@ -11,8 +11,8 @@ from PIL import Image, ImageDraw
 # Page Configuration
 st.set_page_config(page_title="AI Viral Video Studio Pro", page_icon="🎬", layout="wide")
 
-st.title("🎬 AI Viral Video Studio (Pro Engine)")
-st.caption("Guaranteed Non-Black Screen, Multi-Scene Visuals, Precise Duration Control & High-CTR SEO.")
+st.title("🎬 AI Viral Video Studio (Franco & Multi-Language Supported)")
+st.caption("Write in English, Arabic, or Franco! Guaranteed Colored Video Output, Voice Accents, & SEO.")
 
 # Initialize Session State
 if "generated_data" not in st.session_state:
@@ -49,7 +49,7 @@ if st.sidebar.button("🔄 Start New Project", use_container_width=True):
 col1, col2 = st.columns([2, 1])
 
 with col1:
-    topic = st.text_input("💡 Video Topic / Core Idea:", value="Tesla’s Flying Car: Pure Genius or Billionaire Marketing Fraud?", placeholder="e.g. Elon's Flying Car")
+    topic = st.text_input("💡 Video Topic (English, Arabic, or Franco e.g. Tesla flying car fraud wala eh):", value="Tesla’s Flying Car: Pure Genius or Billionaire Marketing Fraud?")
     style = st.selectbox(
         "🎭 Tone & Style:",
         ["Fast-Paced & Energetic", "Engaging & Dramatic", "Educational & Simple", "Storytelling & Inspiring"]
@@ -81,12 +81,13 @@ if generate_btn:
             
             target_words = int(duration * 60 * 2.3) if is_short else int(duration * 60 * 2.2)
             
-            # Step 1: Generate Content via Gemini
-            status_box.info("📝 Step 1/3: Crafting High-CTR Hooks, Script & SEO Tags...")
+            # Step 1: Generate Content via Gemini (Understands Franco/Arabic/English perfectly)
+            status_box.info("📝 Step 1/3: Translating Franco/Idea & Crafting High-CTR Script & SEO Tags...")
             url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-3.8-flash:generateContent?key={gemini_key}"
             
             prompt = f"""
-            Act as a top YouTube growth hacker. Create a viral video production package for: '{topic}'.
+            The user provided this video topic/idea (it might be in English, Arabic, or Franco-Arabic): '{topic}'.
+            Understand the core intent, and act as a top YouTube growth hacker to create a viral video production package in English.
             Tone: {style}. Target word count strictly around {target_words} words.
 
             Return JSON format strictly as follows (no markdown wrapping, no extra text):
@@ -96,7 +97,7 @@ if generate_btn:
                     "Short punchy hook 2 (Max 6-8 words)",
                     "Short punchy hook 3 (Max 6-8 words)"
                 ],
-                "script": "The full spoken voiceover narration text matching the target word count...",
+                "script": "The full spoken voiceover narration text in English matching the target word count...",
                 "tags": "comma separated SEO tags, trending keywords, specific phrases related to topic"
             }}
             """
@@ -134,8 +135,8 @@ if generate_btn:
             probe_cmd_final = f"ffprobe -v error -show_entries format=duration -of default=noprint_wrappers=1:nokey=1 {audio_final}"
             final_audio_dur = float(subprocess.check_output(probe_cmd_final, shell=True).decode('utf-8').strip())
 
-            # Step 3: Guaranteed Dynamic Visual Scenes (No Black Screens)
-            status_box.info("🎥 Step 3/3: Rendering Cinematic Visual Scenes & Video...")
+            # Step 3: Guaranteed Colored Visual Scenes (Encoded via libx264 compatible container)
+            status_box.info("🎥 Step 3/3: Rendering Vibrant Colored Scenes & Video Engine...")
             
             fps = 24
             total_frames = int(fps * final_audio_dur)
@@ -143,14 +144,14 @@ if generate_btn:
             video_no_audio = "temp_video.mp4"
             final_mp4 = "final_generated_video.mp4"
             
+            # Use standard mp4v codec for OpenCV frame writing
             fourcc = cv2.VideoWriter_fourcc(*'mp4v')
             out = cv2.VideoWriter(video_no_audio, fourcc, fps, (width, height))
             
-            # Generate 3 vibrant, high-contrast dynamic scenes internally with python to prevent any network failure / black screens
             color_palettes = [
-                (20, 24, 82),    # Deep Cyber Blue
-                (88, 28, 135),   # Rich Electric Purple
-                (124, 45, 18)    # Energetic Crimson Red
+                (15, 23, 42),    # Slate Dark Navy
+                (30, 41, 59),    # Deep Slate Grey
+                (88, 28, 135)    # Rich Purple
             ]
             
             scene_images = []
@@ -158,16 +159,16 @@ if generate_btn:
                 img = Image.new('RGB', (width, height), color=col)
                 draw = ImageDraw.Draw(img)
                 
-                # Draw artistic glowing geometric pattern for a modern studio look
-                draw.rectangle([60, 60, width - 60, height - 60], outline=(255, 255, 255), width=4)
-                draw.ellipse([width//2 - 150, height//3 - 150, width//2 + 150, height//3 + 150], fill=(56, 189, 248, 100))
+                # Draw artistic glowing borders and shapes to guarantee vibrant pixels
+                draw.rectangle([40, 40, width - 40, height - 40], outline=(56, 189, 248), width=5)
+                draw.ellipse([width//2 - 120, height//3 - 120, width//2 + 120, height//3 + 120], fill=(244, 63, 94))
                 
                 # Bottom text banner container
-                draw.rectangle([(0, height - 260), (width, height)], fill=(10, 10, 15))
+                draw.rectangle([(0, height - 240), (width, height)], fill=(15, 23, 42))
                 
                 # Render topic text cleanly onto canvas
-                draw.text((60, height - 200), f"SCENE {idx + 1}: VIRAL PRODUCTION", fill=(56, 189, 248))
-                draw.text((60, height - 140), topic[:45].upper(), fill=(255, 255, 255))
+                draw.text((60, height - 180), f"SCENE {idx + 1} | AI VIRAL STUDIO", fill=(56, 189, 248))
+                draw.text((60, height - 120), topic[:40].upper(), fill=(255, 255, 255))
                 
                 scene_images.append(img)
 
@@ -184,8 +185,8 @@ if generate_btn:
                 
             out.release()
 
-            # Merge Video & Audio
-            cmd_merge = f"ffmpeg -y -i {video_no_audio} -i {audio_final} -c:v copy -c:a aac -shortest {final_mp4}"
+            # Merge Video & Audio with universal libx264/aac encoding for browser playback compatibility
+            cmd_merge = f"ffmpeg -y -i {video_no_audio} -i {audio_final} -c:v libx264 -pix_fmt yuv420p -c:a aac -shortest {final_mp4}"
             subprocess.run(cmd_merge, shell=True, check=True)
 
             # Store in Session State
@@ -198,7 +199,7 @@ if generate_btn:
                 "topic": topic,
                 "duration": final_audio_dur
             }
-            status_box.success(f"🎉 Production Complete! Video successfully rendered ({final_audio_dur:.1f}s).")
+            status_box.success(f"🎉 Production Complete! Video rendered successfully ({final_audio_dur:.1f}s).")
 
         except Exception as e:
             st.error(f"An error occurred: {e}")
