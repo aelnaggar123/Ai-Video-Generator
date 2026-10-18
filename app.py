@@ -6,7 +6,7 @@ import cv2
 import subprocess
 import numpy as np
 from gtts import gTTS
-from PIL import Image, ImageDraw, ImageIO
+from PIL import Image, ImageDraw
 
 # Page Configuration
 st.set_page_config(page_title="AI Viral Video Studio Pro", page_icon="🎬", layout="wide")
@@ -109,16 +109,11 @@ if generate_btn:
             tts = gTTS(text=data['script'], lang='en', slow=False)
             tts.save(audio_raw)
 
-            # Get exact audio duration using ffprobe command
-            probe_cmd = f"ffprobe -v error -show_entries format=duration -of default=noprint_wrappers=1:nokey=1 {audio_raw}"
-            audio_dur_str = subprocess.check_output(probe_cmd, shell=True).decode('utf-8').strip()
-            audio_duration = float(audio_dur_str) if audio_dur_str else (duration * 60)
-
-            # Minor tempo adjustment if needed to hit exact requested window, keeping it natural
+            # Minor tempo adjustment if needed to hit exact requested window
             cmd_audio = f"ffmpeg -y -i {audio_raw} -filter:a 'atempo=1.15' {audio_final}"
             subprocess.run(cmd_audio, shell=True, check=True)
-            
-            # Recalculate exact duration after speedup
+
+            # Get exact audio duration using ffprobe
             probe_cmd_final = f"ffprobe -v error -show_entries format=duration -of default=noprint_wrappers=1:nokey=1 {audio_final}"
             final_audio_dur = float(subprocess.check_output(probe_cmd_final, shell=True).decode('utf-8').strip())
 
@@ -134,8 +129,7 @@ if generate_btn:
             fourcc = cv2.VideoWriter_fourcc(*'mp4v')
             out = cv2.VideoWriter(video_no_audio, fourcc, fps, (width, height))
             
-            # Generate integrated AI-themed visual scenes matching topic keywords using Pollinations AI (Free real-time image generation API)
-            # This ensures 100% topic-related visual generation natively
+            # Fetch AI Image generated for the topic via Pollinations AI
             headers_img = {'User-Agent': 'Mozilla/5.0'}
             img_url = f"https://image.pollinations.ai/prompt/Cinematic%20photorealistic%20{topic.replace(' ', '%20')}%20futuristic%208k%20hyperdetailed?width={width}&height={height}&nologo=true"
             
@@ -148,17 +142,15 @@ if generate_btn:
                 else:
                     raise Exception("Fallback image")
             except:
-                # Fallback styled frame if image API fails
                 base_image = Image.new('RGB', (width, height), color=(10, 15, 30))
 
             # Render frame sequence matching exact audio duration down to the frame
             for frame_num in range(total_frames):
-                # Apply subtle dynamic lighting shift per frame
                 frame_img = base_image.copy()
                 draw = ImageDraw.Draw(frame_img)
                 
-                # Add professional semi-transparent gradient/overlay for readability
-                draw.rectangle([(0, height - 250), (width, height)], fill=(0, 0, 0, 180))
+                # Add overlay for text readability
+                draw.rectangle([(0, height - 250), (width, height)], fill=(0, 0, 0))
                 
                 # Render clean title overlay
                 draw.text((60, height - 180), topic[:45].upper(), fill=(255, 255, 255))
@@ -175,7 +167,7 @@ if generate_btn:
             cmd_merge = f"ffmpeg -y -i {video_no_audio} -i {audio_final} -c:v copy -c:a aac -shortest {final_mp4}"
             subprocess.run(cmd_merge, shell=True, check=True)
 
-            # Save into Session State
+            # Save into Session State so data stays after interaction
             st.session_state.generated_data = {
                 "hooks": data['hooks'],
                 "script": data['script'],
