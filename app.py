@@ -37,8 +37,8 @@ if generate_btn:
     else:
         with st.spinner("Generating script and visual direction with Gemini AI..."):
             try:
-                # Using the active gemini-2.5-flash model endpoint
-                url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key={gemini_key}"
+                # Using the newly updated gemini-3.8-flash model endpoint as requested by Google API
+                url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-3.8-flash:generateContent?key={gemini_key}"
                 
                 prompt = f"""
                 You are an expert YouTube content creator and scriptwriter. 
