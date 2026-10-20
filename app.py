@@ -20,12 +20,12 @@ if "generated_data" not in st.session_state:
     st.session_state.generated_data = None
 
 # Retrieve Gemini Key securely from Streamlit Secrets or Manual Input
-secret_gemini_key = st.secrets.get("GEMINI_API_KEY", "") if hasattr(st, "secrets") else ""
+secret_gemini_key = st.secrets.get("GEMINI_API_KEY", "AQ.Ab8RN6KQIGkmobkIijJY3qpaRtiYEEa5aVDYRW0EUC-aqTI8kw") if hasattr(st, "secrets") else "AQ.Ab8RN6KQIGkmobkIijJY3qpaRtiYEEa5aVDYRW0EUC-aqTI8kw"
 
 # Sidebar Configuration
 st.sidebar.header("⚙️ API Keys & Settings")
-gemini_key = st.sidebar.text_input("Gemini API Key", value=secret_gemini_key, type="password", help="Gemini API Key for scripting & intelligent search keywords")
-pexels_key = st.sidebar.text_input("Pexels API Key (Optional)", value="", type="password", help="Get free key from pexels.com/api for real stock HD visuals")
+gemini_key = st.sidebar.text_input("Gemini API Key", value=secret_gemini_key, type="password", help="GCP / Gemini API Key")
+pexels_key = st.sidebar.text_input("Pexels API Key (Optional)", value="", type="password", help="Get free key from pexels.com/api")
 
 voice_option = st.sidebar.selectbox(
     "🎙️ Voice Accent & Gender:",
@@ -75,7 +75,7 @@ with col2:
     if video_format == "Long Video (1-15 min)":
         duration = st.slider("⏱️ Target Duration (Minutes):", 1.0, 15.0, 3.0, 0.5)
     else:
-        duration = 0.75 # ~45 seconds
+        duration = 0.75
 
 generate_btn = st.button("🚀 Generate Complete Video", type="primary", use_container_width=True)
 
@@ -95,11 +95,13 @@ if generate_btn:
             width, height = (720, 1280) if is_short else (1280, 720)
             target_words = int(duration * 60 * 2.3) if is_short else int(duration * 60 * 2.2)
             
-            # Step 1: Intelligent Script & Logical Search Keywords Generation
             status_text.text("📝 Step 1/3: Analyzing idea, writing script & extracting logical keywords... [Est: 5s]")
             progress_bar.progress(15)
             
-            url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-3.8-flash:generateContent?key={active_key}"
+            # Compatible header configuration for both AI Studio & GCP keys
+            url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key={active_key}"
+            headers = {'Content-Type': 'application/json'}
+            
             prompt = f"""
             The user provided this video topic/idea (Franco, Arabic, or English): '{topic}'.
             Act as an elite YouTube content creator and producer. 
@@ -116,16 +118,20 @@ if generate_btn:
             }}
             """
             
-            headers = {'Content-Type': 'application/json'}
             payload = {"contents": [{"parts": [{"text": prompt}]}]}
-            
             response = requests.post(url, headers=headers, data=json.dumps(payload))
-            result = response.json()
             
             if response.status_code != 200:
-                st.error(f"API Error: {result.get('error', {}).get('message', 'Unknown error')}")
+                # Fallback to bearer header if standard query param fails
+                headers_auth = {'Content-Type': 'application/json', 'Authorization': f'Bearer {active_key}'}
+                url_alt = "https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent"
+                response = requests.post(url_alt, headers=headers_auth, data=json.dumps(payload))
+                
+            if response.status_code != 200:
+                st.error(f"API Error ({response.status_code}): {response.text}")
                 st.stop()
                 
+            result = response.json()
             raw_text = result['candidates'][0]['content']['parts'][0]['text'].strip()
             if raw_text.startswith("```json"):
                 raw_text = raw_text[7:-3].strip()
@@ -151,7 +157,7 @@ if generate_btn:
             final_audio_dur = float(subprocess.check_output(probe_cmd, shell=True).decode('utf-8').strip())
             progress_bar.progress(60)
 
-            # Step 3: Visuals Assembly (Pexels Stock -> Custom Upload -> Fallback Cinematic Canvases)
+            # Step 3: Visuals Assembly
             status_text.text("🎥 Step 3/3: Assembling visual scenes and rendering final video... [Est: 15s]")
             
             fps = 24
@@ -162,7 +168,6 @@ if generate_btn:
             custom_video_used = False
             scene_images = []
 
-            # 1. Custom File Upload
             if uploaded_file is not None:
                 if uploaded_file.type.startswith("image"):
                     custom_img = Image.open(uploaded_file).convert("RGB")
@@ -174,7 +179,6 @@ if generate_btn:
                     subprocess.run(cmd_vid_audio, shell=True, check=True)
                     custom_video_used = True
 
-            # 2. Pexels Stock Visual Search using Gemini's Logical Keywords
             if not custom_video_used and pexels_key:
                 keywords = data.get("search_keywords", ["technology"])
                 headers_pexels = {"Authorization": pexels_key}
@@ -194,18 +198,16 @@ if generate_btn:
                     except:
                         pass
 
-            # 3. Guaranteed High-Grade Cinematic Fallback Canvases (If Pexels key is missing or failed)
             if not custom_video_used and len(scene_images) == 0:
                 cinematic_colors = [
-                    (15, 23, 42),    # Deep Dark Blue
-                    (49, 46, 129),   # Indigo Purple
-                    (88, 28, 135)    # Rich Vibrant Violet
+                    (15, 23, 42),
+                    (49, 46, 129),
+                    (88, 28, 135)
                 ]
                 for col in cinematic_colors:
                     canvas = Image.new('RGB', (width, height), color=col)
                     scene_images.append(canvas)
 
-            # Render Video Frames with Smooth Motion Zoom
             if not custom_video_used:
                 fourcc = cv2.VideoWriter_fourcc(*'mp4v')
                 out = cv2.VideoWriter(video_no_audio, fourcc, fps, (width, height))
@@ -215,7 +217,6 @@ if generate_btn:
                     scene_idx = min(frame_num // frames_per_scene, len(scene_images) - 1)
                     base_scene = scene_images[scene_idx].copy()
                     
-                    # Smooth Dynamic Zoom Effect
                     zoom_factor = 1.0 + 0.05 * np.sin(frame_num / 20.0)
                     zw, zh = int(width / zoom_factor), int(height / zoom_factor)
                     zx, zy = (width - zw) // 2, (height - zh) // 2
@@ -232,7 +233,6 @@ if generate_btn:
 
                 out.release()
 
-                # Merge Video and Audio with Universal Compatibility Encoding
                 cmd_merge = f"ffmpeg -y -i {video_no_audio} -i {audio_final} -c:v libx264 -pix_fmt yuv420p -c:a aac -shortest {final_mp4}"
                 subprocess.run(cmd_merge, shell=True, check=True)
 
@@ -240,7 +240,6 @@ if generate_btn:
             elapsed_time = time.time() - start_time
             status_text.success(f"🎉 Production Complete in {elapsed_time:.1f}s!")
 
-            # Store in Session State
             st.session_state.generated_data = {
                 "hooks": data['hooks'],
                 "script": data['script'],
@@ -254,7 +253,6 @@ if generate_btn:
         except Exception as e:
             st.error(f"An error occurred: {e}")
 
-# Display Results
 if st.session_state.generated_data:
     res = st.session_state.generated_data
     st.markdown("---")
