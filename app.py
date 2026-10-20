@@ -5,7 +5,6 @@ import os
 import cv2
 import subprocess
 import time
-import re
 import numpy as np
 from gtts import gTTS
 from PIL import Image
@@ -15,7 +14,7 @@ from io import BytesIO
 st.set_page_config(page_title="A & W AI Video Creation Tool", page_icon="🎬", layout="wide")
 
 st.title("🎬 A & W AI Video Creation Tool")
-st.caption("Automated Scripting, Real Web HD Visuals, Voices, Subtitles & Smooth Motion Assembly.")
+st.caption("Advanced AI Scripting, Smart Real Web HD Visuals, Voices, Subtitles & Smooth Motion Assembly.")
 
 # Initialize Session State
 if "generated_data" not in st.session_state:
@@ -80,23 +79,20 @@ with col2:
 
 enable_subtitles = st.checkbox("💬 Burn-in Dynamic Subtitles on Video", value=True)
 
-generate_btn = st.button("🚀 Generate High-Quality Video with Subtitles", type="primary", use_container_width=True)
+generate_btn = st.button("🚀 Generate Smart Context Video", type="primary", use_container_width=True)
 
 # Helper function to fetch guaranteed REAL HD photos directly from live web image providers
 def fetch_guaranteed_web_photo(keyword, width, height, index=0):
     clean_kw = keyword.strip().replace(" ", ",").lower()
-    
-    # Provider 1: LoremFlickr (Live topic tag photo engine)
     try:
         url = f"https://loremflickr.com/{width}/{height}/{clean_kw}?lock={index + 10}"
-        headers = {"User-Agent": "Mozilla/5.0 (Windows NT 10.0; View64; x64)"}
+        headers = {"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64)"}
         res = requests.get(url, headers=headers, timeout=6)
         if res.status_code == 200 and len(res.content) > 10000:
             return Image.open(BytesIO(res.content)).convert("RGB")
     except:
         pass
 
-    # Provider 2: Picsum photos with topic seeds
     try:
         url_alt = f"https://picsum.photos/seed/{clean_kw}{index}/{width}/{height}"
         res_alt = requests.get(url_alt, timeout=6)
@@ -108,20 +104,17 @@ def fetch_guaranteed_web_photo(keyword, width, height, index=0):
     return None
 
 # Helper to split text into short readable subtitle chunks
-def split_script_into_chunks(script_text, max_words=5):
+def split_script_into_chunks(script_text, max_words=4):
     words = script_text.split()
     chunks = []
     current_chunk = []
-    
     for word in words:
         current_chunk.append(word)
         if len(current_chunk) >= max_words or word.endswith(('.', '!', '?', ',')):
             chunks.append(" ".join(current_chunk))
             current_chunk = []
-            
     if current_chunk:
         chunks.append(" ".join(current_chunk))
-        
     return chunks
 
 if generate_btn:
@@ -137,29 +130,32 @@ if generate_btn:
         try:
             is_short = (video_format == "YouTube Short (30-59 sec)")
             width, height = (720, 1280) if is_short else (1280, 720)
-            
-            # Calculate word count accurately based on target duration (Average speech speed: ~135 words/min)
             target_words = int(duration * 135) if not is_short else int(duration * 60 * 2.2)
             
-            status_text.text("📝 Step 1/4: Writing full-length script & extracting visual keywords... [Est: 5s]")
+            status_text.text("📝 Step 1/4: Deep analyzing topic & writing tailored script... [Est: 5s]")
             progress_bar.progress(15)
             
             script_data = None
             
-            # Use Gemini if valid key provided
+            # Use Gemini with advanced prompt engineering to avoid templates and copy-paste
             if active_gemini_key and active_gemini_key.startswith("AIza"):
                 try:
                     url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key={active_gemini_key}"
                     prompt = f"""
-                    The user provided this video topic/idea: '{topic}'.
-                    Act as an elite YouTube content creator and producer. 
-                    1. Write a comprehensive, detailed voiceover script in English covering the topic thoroughly. Tone: {style}. Target Word Count MUST be around EXACLTY {target_words} words to fit the requested duration of {duration} minutes.
-                    2. Extract 8-10 specific, real-world English visual search keywords related to the topic for image fetching.
-                    3. Generate 3 short viral hooks and comma-separated SEO tags.
+                    You are an elite, highly intelligent documentary scriptwriter and content creator. 
+                    The user has provided this specific topic/idea: '{topic}'.
+                    
+                    CRITICAL INSTRUCTIONS:
+                    - Do NOT use generic templates or copy-paste the topic blindly.
+                    - Analyze the core meaning, arguments, or questions raised in the user's topic deeply.
+                    - Write a fully custom, engaging, professional voiceover script in English that directly discusses, analyzes, and explores this exact topic in depth. Tone: {style}. Target Word Count MUST be around EXACTLY {target_words} words.
+                    - Extract 8-10 specific, highly relevant English visual search keywords related directly to the concepts inside the topic.
+                    - Generate 3 short viral hooks and comma-separated SEO tags.
+
                     Return JSON format strictly as follows (no markdown wrapping, no extra text):
                     {{
                         "hooks": ["Hook 1", "Hook 2", "Hook 3"],
-                        "script": "Full detailed voiceover narration script...",
+                        "script": "Full custom tailored script analyzing the topic...",
                         "tags": "tag1, tag2, tag3",
                         "search_keywords": ["keyword1", "keyword2", "keyword3", "keyword4", "keyword5", "keyword6", "keyword7", "keyword8"]
                     }}
@@ -177,29 +173,26 @@ if generate_btn:
                 except:
                     pass
             
-            # Robust Fallback Script Generator matching desired word count
+            # Smart Custom Fallback if Gemini key is missing
             if not script_data:
-                clean_topic_words = topic.split()[:2]
-                main_kw = clean_topic_words[0] if clean_topic_words else "technology"
+                clean_topic_words = [w for w in topic.split() if len(w) > 3]
+                main_kw = clean_topic_words[0] if clean_topic_words else "innovation"
+                sec_kw = clean_topic_words[1] if len(clean_topic_words) > 1 else "technology"
                 
-                base_text = f"Welcome back everyone. Today we are diving deep into a fascinating topic that has taken the internet by storm: {topic}. As we examine the details closely, experts are split on what this means for the future. "
-                detail_text = f"When we analyze {topic}, we see groundbreaking developments that change how we think about innovation. History shows us that technological shifts happen faster than expected. Analysts point out several key factors driving this change: first, the rapid advancement of underlying technology; second, the massive public interest; and third, the strategic investments being made. "
-                outro_text = f"In conclusion, whether {topic} proves to be a massive success or a temporary phase, one thing is certain: it marks a crucial moment in our modern era. Make sure to share your thoughts in the comments below!"
+                custom_fallback_script = f"Let's talk about a major subject that everyone is discussing right now: {topic}. When looking closely at this idea, we need to break down what makes it so important today. Analysts and experts have pointed out multiple dimensions to this story. On one hand, the core concept challenges traditional thinking and opens doors to new possibilities. On the other hand, skeptics argue we must look at the practical realities, risks, and long-term implications before jumping to conclusions. As this situation continues to evolve, understanding the nuances behind {topic} will help us see the bigger picture of where things are heading next."
                 
-                full_fallback_script = base_text
-                while len(full_fallback_script.split()) < target_words:
-                    full_fallback_script += " " + detail_text
-                full_fallback_script += " " + outro_text
+                while len(custom_fallback_script.split()) < target_words:
+                    custom_fallback_script += f" Furthermore, looking deeper into {topic}, the underlying mechanics and market reactions show a clear shift in perspective. Stakeholders are weighing both the potential rewards and the hidden challenges."
 
                 script_data = {
                     "hooks": [
-                        f"You won't believe what is happening with {topic}!",
-                        f"The truth behind {topic} revealed!",
-                        "Everything you knew about this is completely wrong!"
+                        f"The hidden reality behind {topic}!",
+                        f"Why everyone is getting {topic} completely wrong!",
+                        f"The ultimate breakdown of {topic}!"
                     ],
-                    "script": full_fallback_script,
-                    "tags": f"{topic}, viral video, tech news, trending, analysis",
-                    "search_keywords": [main_kw, "car", "technology", "city", "future", "space", "innovation", "concept"]
+                    "script": custom_fallback_script,
+                    "tags": f"{topic}, analysis, trending, insights, deep dive",
+                    "search_keywords": [main_kw, sec_kw, "business", "innovation", "future", "strategy", "technology", "modern"]
                 }
             
             data = script_data
@@ -222,7 +215,7 @@ if generate_btn:
             progress_bar.progress(50)
 
             # Step 3: Fetch Real HD Photos
-            status_text.text("🌐 Step 3/4: Downloading HD photos from live web engines... [Est: 10s]")
+            status_text.text("🌐 Step 3/4: Downloading HD photos matching topic keywords... [Est: 10s]")
             
             fps = 24
             total_frames = int(fps * final_audio_dur)
@@ -245,7 +238,7 @@ if generate_btn:
                     custom_video_used = True
 
             if not custom_video_used:
-                keywords = data.get("search_keywords", ["car", "technology", "city", "future", "space"])
+                keywords = data.get("search_keywords", ["technology", "innovation", "future"])
                 for idx, kw in enumerate(keywords):
                     img = fetch_guaranteed_web_photo(kw, width, height, index=idx)
                     if img:
@@ -257,7 +250,7 @@ if generate_btn:
                     if img:
                         scene_images.append(img)
 
-            # Fast In-Memory Video Rendering with Subtle Smooth Motion
+            # Step 4: Render Motion Video & Burn Subtitles
             status_text.text("🎥 Step 4/4: Rendering motion video & burning subtitles... [Est: 15s]")
             if not custom_video_used and len(scene_images) > 0:
                 fourcc = cv2.VideoWriter_fourcc(*'mp4v')
@@ -286,7 +279,6 @@ if generate_btn:
 
                 out.release()
 
-                # Burn Subtitles onto Video using FFmpeg if enabled
                 video_to_merge = video_no_audio
                 if enable_subtitles:
                     try:
@@ -316,10 +308,9 @@ if generate_btn:
                         cmd_srt = f"ffmpeg -y -i {video_no_audio} -vf \"{subtitle_filter}\" -c:v libx264 {video_with_subtitles}"
                         subprocess.run(cmd_srt, shell=True, check=True)
                         video_to_merge = video_with_subtitles
-                    except Exception as srt_err:
-                        pass # Fallback to video without burned subtitles if font issue occurs
+                    except:
+                        pass
 
-                # Merge Video and Voiceover
                 cmd_merge = f"ffmpeg -y -i {video_to_merge} -i {audio_final} -c:v libx264 -pix_fmt yuv420p -c:a aac -shortest {final_mp4}"
                 subprocess.run(cmd_merge, shell=True, check=True)
 
