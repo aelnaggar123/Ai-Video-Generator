@@ -13,18 +13,19 @@ from PIL import Image
 st.set_page_config(page_title="A & W AI Video Creation Tool", page_icon="🎬", layout="wide")
 
 st.title("🎬 A & W AI Video Creation Tool")
-st.caption("Custom Assets, Male/Female AI Voices, Clean Zoom Visuals, & Precise Duration Matching.")
+st.caption("Real HD Stock Visuals (Pexels), Custom Media Uploads, Multi-Gender Voices & Precise Duration Control.")
 
 # Initialize Session State
 if "generated_data" not in st.session_state:
     st.session_state.generated_data = None
 
-# Default API Key set by user request
-DEFAULT_API_KEY = "AQ.Ab8RN6Ia5F0k6PkHKVkdVBAsiBm9mBHfX9zXFZN27QMIRRt5ig"
+# Default Gemini Key
+DEFAULT_GEMINI_KEY = "AQ.Ab8RN6Ia5F0k6PkHKVkdVBAsiBm9mBHfX9zXFZN27QMIRRt5ig"
 
 # Sidebar Configuration
-st.sidebar.header("⚙️ Settings & Key")
-gemini_key = st.sidebar.text_input("Gemini API Key", value=DEFAULT_API_KEY, type="password", help="Editable default key")
+st.sidebar.header("⚙️ API Keys & Settings")
+gemini_key = st.sidebar.text_input("Gemini API Key", value=DEFAULT_GEMINI_KEY, type="password", help="Gemini API Key for scripting & tags")
+pexels_key = st.sidebar.text_input("Pexels API Key (Optional for Stock Videos)", value="", type="password", help="Get free key from pexels.com/api for real HD video clips")
 
 voice_option = st.sidebar.selectbox(
     "🎙️ Voice Accent & Gender:",
@@ -38,7 +39,6 @@ voice_option = st.sidebar.selectbox(
     ]
 )
 
-# Map UI option to gTTS tld parameters
 tld_map = {
     "🇺🇸 US Female (Standard Energetic)": "com",
     "🇺🇸 US Male (Deep & Authoritative)": "us",
@@ -52,7 +52,7 @@ if st.sidebar.button("🔄 Start New Project", use_container_width=True):
     st.session_state.generated_data = None
     st.rerun()
 
-# Layout Inputs
+# Main Layout
 col1, col2 = st.columns([2, 1])
 
 with col1:
@@ -94,8 +94,8 @@ if generate_btn:
             width, height = (720, 1280) if is_short else (1280, 720)
             target_words = int(duration * 60 * 2.3) if is_short else int(duration * 60 * 2.2)
             
-            # Step 1: Script & Strategy Generation
-            status_text.text("📝 Step 1/3: Analyzing Topic & Generating Script & SEO Strategy... [Est: 5s]")
+            # Step 1: Script, Tags, and Visual Search Queries via Gemini
+            status_text.text("📝 Step 1/3: Crafting High-CTR Script, SEO Tags & Stock Search Queries... [Est: 5s]")
             progress_bar.progress(15)
             
             url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-3.8-flash:generateContent?key={gemini_key}"
@@ -113,11 +113,7 @@ if generate_btn:
                 ],
                 "script": "The full spoken voiceover narration text in English matching the target word count...",
                 "tags": "comma separated SEO tags, trending keywords, specific phrases related to topic",
-                "scene_prompts": [
-                    "Expressive cartoon character talking passionately about the topic, vibrant colors",
-                    "Animated comic style illustration showing a surprising twist or reaction",
-                    "Cartoon character pointing at a futuristic object, vibrant vector art background"
-                ]
+                "search_keywords": ["simple search query 1", "simple search query 2", "simple search query 3"]
             }}
             """
             
@@ -140,7 +136,7 @@ if generate_btn:
             data = json.loads(raw_text)
             progress_bar.progress(35)
 
-            # Step 2: Voiceover Audio Generation
+            # Step 2: Voiceover Audio Generation & Duration Probe
             status_text.text(f"🎙️ Step 2/3: Generating Voiceover with {voice_option}... [Est: 10s]")
             audio_raw = "raw_voice.mp3"
             audio_final = "final_voice.mp3"
@@ -156,17 +152,18 @@ if generate_btn:
             final_audio_dur = float(subprocess.check_output(probe_cmd, shell=True).decode('utf-8').strip())
             progress_bar.progress(60)
 
-            # Step 3: Visual Assembly (Custom Asset or Generated Cartoon + Clean Zoom)
-            status_text.text("🎥 Step 3/3: Processing Clean Motion Visuals & Video Rendering... [Est: 15s]")
+            # Step 3: Fetch Stock Visuals (or Custom Upload / Fallback Canvas)
+            status_text.text("🎥 Step 3/3: Gathering Stock Visuals & Rendering Final Video... [Est: 15s]")
             
             fps = 24
             total_frames = int(fps * final_audio_dur)
             video_no_audio = "temp_video.mp4"
             final_mp4 = "final_generated_video.mp4"
             
+            custom_video_used = False
             scene_images = []
 
-            # Handle custom uploaded image/video if provided by user
+            # Option A: User Custom File Upload
             if uploaded_file is not None:
                 if uploaded_file.type.startswith("image"):
                     custom_img = Image.open(uploaded_file).convert("RGB")
@@ -174,33 +171,39 @@ if generate_btn:
                 elif uploaded_file.type.startswith("video"):
                     with open("custom_input_vid.mp4", "wb") as f:
                         f.write(uploaded_file.getbuffer())
-                    # Video overlay branch via ffmpeg directly
                     cmd_vid_audio = f"ffmpeg -y -stream_loop -1 -i custom_input_vid.mp4 -i {audio_final} -c:v libx264 -pix_fmt yuv420p -c:a aac -shortest {final_mp4}"
                     subprocess.run(cmd_vid_audio, shell=True, check=True)
-                    scene_images = None # Signals custom video bypass
+                    custom_video_used = True
 
-            # If no custom image/video, fetch AI cartoon scene images
-            if scene_images is not None and len(scene_images) == 0:
-                scene_prompts = data.get("scene_prompts", [topic])
-                for idx, s_prompt in enumerate(scene_prompts[:3]):
-                    cleaned_prompt = s_prompt.replace(" ", "%20").replace(":", "").replace("?", "")
-                    img_url = f"https://image.pollinations.ai/prompt/Expressive%20cartoon%20character%20comic%20{cleaned_prompt}%20vibrant%20colors?width={width}&height={height}&nologo=true"
+            # Option B: Pexels API Stock Video/Image Fetch
+            if not custom_video_used and pexels_key and len(scene_images) == 0:
+                keywords = data.get("search_keywords", [topic])
+                headers_pexels = {"Authorization": pexels_key}
+                
+                for kw in keywords[:3]:
                     try:
-                        r = requests.get(img_url, headers={'User-Agent': 'Mozilla/5.0'}, timeout=8)
-                        if r.status_code == 200 and len(r.content) > 1000:
-                            with open(f"cartoon_{idx}.jpg", "wb") as f:
-                                f.write(r.content)
-                            scene_images.append(Image.open(f"cartoon_{idx}.jpg").convert("RGB"))
+                        p_url = f"https://api.pexels.com/v1/search?query={kw}&per_page=1"
+                        res_p = requests.get(p_url, headers=headers_pexels, timeout=5)
+                        if res_p.status_code == 200:
+                            p_data = res_p.json()
+                            if p_data.get("photos"):
+                                img_src = p_data["photos"][0]["src"]["large"]
+                                img_bytes = requests.get(img_src, timeout=5).content
+                                with open("pexels_temp.jpg", "wb") as f:
+                                    f.write(img_bytes)
+                                scene_images.append(Image.open("pexels_temp.jpg").convert("RGB"))
                     except:
                         pass
 
-            # Fallback canvas if empty
-            if scene_images is not None and len(scene_images) == 0:
-                fallback_canvas = Image.new('RGB', (width, height), color=(30, 27, 75))
-                scene_images.append(fallback_canvas)
+            # Option C: Fallback High-Contrast Visual Canvases (Guaranteed No Black Screens)
+            if not custom_video_used and len(scene_images) == 0:
+                colors = [(15, 23, 42), (30, 27, 75), (88, 28, 135)]
+                for col in colors:
+                    canvas = Image.new('RGB', (width, height), color=col)
+                    scene_images.append(canvas)
 
-            # Render Zoom Frame Sequence if working with images
-            if scene_images is not None:
+            # Render Frame Sequence & Smooth Motion Zooming
+            if not custom_video_used:
                 fourcc = cv2.VideoWriter_fourcc(*'mp4v')
                 out = cv2.VideoWriter(video_no_audio, fourcc, fps, (width, height))
                 frames_per_scene = max(1, total_frames // len(scene_images))
@@ -209,7 +212,7 @@ if generate_btn:
                     scene_idx = min(frame_num // frames_per_scene, len(scene_images) - 1)
                     base_scene = scene_images[scene_idx].copy()
                     
-                    # Clean Smooth Dynamic Zoom Effect (No text bars at the bottom)
+                    # Clean Dynamic Zooming
                     zoom_factor = 1.0 + 0.06 * np.sin(frame_num / 18.0)
                     zw, zh = int(width / zoom_factor), int(height / zoom_factor)
                     zx, zy = (width - zw) // 2, (height - zh) // 2
@@ -221,21 +224,20 @@ if generate_btn:
                     cv_img = cv2.imread(temp_frame_path)
                     out.write(cv_img)
                     
-                    # Update progress bar smoothly during rendering
                     current_p = 60 + int((frame_num / total_frames) * 35)
                     progress_bar.progress(min(current_p, 95))
 
                 out.release()
 
-                # Merge Video & Audio
+                # Merge Video and Final Audio
                 cmd_merge = f"ffmpeg -y -i {video_no_audio} -i {audio_final} -c:v libx264 -pix_fmt yuv420p -c:a aac -shortest {final_mp4}"
                 subprocess.run(cmd_merge, shell=True, check=True)
 
             progress_bar.progress(100)
             elapsed_time = time.time() - start_time
-            status_text.success(f"🎉 Production Complete in {elapsed_time:.1f}s! Lock below.")
+            status_text.success(f"🎉 Production Complete in {elapsed_time:.1f}s!")
 
-            # Store in Session State
+            # Save in Session State
             st.session_state.generated_data = {
                 "hooks": data['hooks'],
                 "script": data['script'],
@@ -249,7 +251,7 @@ if generate_btn:
         except Exception as e:
             st.error(f"An error occurred: {e}")
 
-# Display Results from Session State
+# Display Results
 if st.session_state.generated_data:
     res = st.session_state.generated_data
     st.markdown("---")
