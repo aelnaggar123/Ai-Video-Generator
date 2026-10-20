@@ -5,6 +5,7 @@ import os
 import cv2
 import subprocess
 import time
+import re
 import numpy as np
 from gtts import gTTS
 from PIL import Image
@@ -14,7 +15,7 @@ from io import BytesIO
 st.set_page_config(page_title="A & W AI Video Creation Tool", page_icon="🎬", layout="wide")
 
 st.title("🎬 A & W AI Video Creation Tool")
-st.caption("Automated Scripting, Smart Real Web HD Visuals, Voices & Clean Assembly.")
+st.caption("Automated Scripting, Real Web HD Visuals, Voices, Subtitles & Smooth Motion Assembly.")
 
 # Initialize Session State
 if "generated_data" not in st.session_state:
@@ -73,20 +74,22 @@ with col2:
     )
     
     if video_format == "Long Video (1-15 min)":
-        duration = st.slider("⏱️ Target Duration (Minutes):", 1.0, 15.0, 3.0, 0.5)
+        duration = st.slider("⏱️ Target Duration (Minutes):", 1.0, 15.0, 2.0, 0.5)
     else:
         duration = 0.75
 
-generate_btn = st.button("🚀 Generate Video with Real Web Photos", type="primary", use_container_width=True)
+enable_subtitles = st.checkbox("💬 Burn-in Dynamic Subtitles on Video", value=True)
+
+generate_btn = st.button("🚀 Generate High-Quality Video with Subtitles", type="primary", use_container_width=True)
 
 # Helper function to fetch guaranteed REAL HD photos directly from live web image providers
 def fetch_guaranteed_web_photo(keyword, width, height, index=0):
     clean_kw = keyword.strip().replace(" ", ",").lower()
     
-    # Provider 1: LoremFlickr (Reliable live topic tag photo engine)
+    # Provider 1: LoremFlickr (Live topic tag photo engine)
     try:
         url = f"https://loremflickr.com/{width}/{height}/{clean_kw}?lock={index + 10}"
-        headers = {"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64)"}
+        headers = {"User-Agent": "Mozilla/5.0 (Windows NT 10.0; View64; x64)"}
         res = requests.get(url, headers=headers, timeout=6)
         if res.status_code == 200 and len(res.content) > 10000:
             return Image.open(BytesIO(res.content)).convert("RGB")
@@ -104,6 +107,23 @@ def fetch_guaranteed_web_photo(keyword, width, height, index=0):
 
     return None
 
+# Helper to split text into short readable subtitle chunks
+def split_script_into_chunks(script_text, max_words=5):
+    words = script_text.split()
+    chunks = []
+    current_chunk = []
+    
+    for word in words:
+        current_chunk.append(word)
+        if len(current_chunk) >= max_words or word.endswith(('.', '!', '?', ',')):
+            chunks.append(" ".join(current_chunk))
+            current_chunk = []
+            
+    if current_chunk:
+        chunks.append(" ".join(current_chunk))
+        
+    return chunks
+
 if generate_btn:
     active_gemini_key = gemini_key if gemini_key else secret_gemini_key
     
@@ -117,9 +137,11 @@ if generate_btn:
         try:
             is_short = (video_format == "YouTube Short (30-59 sec)")
             width, height = (720, 1280) if is_short else (1280, 720)
-            target_words = int(duration * 60 * 2.3) if is_short else int(duration * 60 * 2.2)
             
-            status_text.text("📝 Step 1/3: Writing script & extracting visual keywords... [Est: 5s]")
+            # Calculate word count accurately based on target duration (Average speech speed: ~135 words/min)
+            target_words = int(duration * 135) if not is_short else int(duration * 60 * 2.2)
+            
+            status_text.text("📝 Step 1/4: Writing full-length script & extracting visual keywords... [Est: 5s]")
             progress_bar.progress(15)
             
             script_data = None
@@ -131,15 +153,15 @@ if generate_btn:
                     prompt = f"""
                     The user provided this video topic/idea: '{topic}'.
                     Act as an elite YouTube content creator and producer. 
-                    1. Write an engaging voiceover script in English based on the core meaning. Tone: {style}. Word count around {target_words} words.
-                    2. Extract 5 specific, real-world English visual search keywords related to the topic (e.g. 'car', 'technology', 'city', 'future', 'space').
+                    1. Write a comprehensive, detailed voiceover script in English covering the topic thoroughly. Tone: {style}. Target Word Count MUST be around EXACLTY {target_words} words to fit the requested duration of {duration} minutes.
+                    2. Extract 8-10 specific, real-world English visual search keywords related to the topic for image fetching.
                     3. Generate 3 short viral hooks and comma-separated SEO tags.
                     Return JSON format strictly as follows (no markdown wrapping, no extra text):
                     {{
                         "hooks": ["Hook 1", "Hook 2", "Hook 3"],
-                        "script": "Full voiceover narration script...",
+                        "script": "Full detailed voiceover narration script...",
                         "tags": "tag1, tag2, tag3",
-                        "search_keywords": ["keyword1", "keyword2", "keyword3", "keyword4", "keyword5"]
+                        "search_keywords": ["keyword1", "keyword2", "keyword3", "keyword4", "keyword5", "keyword6", "keyword7", "keyword8"]
                     }}
                     """
                     payload = {"contents": [{"parts": [{"text": prompt}]}]}
@@ -155,26 +177,36 @@ if generate_btn:
                 except:
                     pass
             
-            # Smart Fallback Script Generator
+            # Robust Fallback Script Generator matching desired word count
             if not script_data:
                 clean_topic_words = topic.split()[:2]
                 main_kw = clean_topic_words[0] if clean_topic_words else "technology"
+                
+                base_text = f"Welcome back everyone. Today we are diving deep into a fascinating topic that has taken the internet by storm: {topic}. As we examine the details closely, experts are split on what this means for the future. "
+                detail_text = f"When we analyze {topic}, we see groundbreaking developments that change how we think about innovation. History shows us that technological shifts happen faster than expected. Analysts point out several key factors driving this change: first, the rapid advancement of underlying technology; second, the massive public interest; and third, the strategic investments being made. "
+                outro_text = f"In conclusion, whether {topic} proves to be a massive success or a temporary phase, one thing is certain: it marks a crucial moment in our modern era. Make sure to share your thoughts in the comments below!"
+                
+                full_fallback_script = base_text
+                while len(full_fallback_script.split()) < target_words:
+                    full_fallback_script += " " + detail_text
+                full_fallback_script += " " + outro_text
+
                 script_data = {
                     "hooks": [
                         f"You won't believe what is happening with {topic}!",
                         f"The truth behind {topic} revealed!",
                         "Everything you knew about this is completely wrong!"
                     ],
-                    "script": f"Welcome back everyone. Today we are diving deep into a fascinating topic that has taken the internet by storm: {topic}. As we examine the details closely, experts are split on what this means for the future. Stay tuned as we break down all the key aspects, the hidden implications, and what you need to know right now.",
+                    "script": full_fallback_script,
                     "tags": f"{topic}, viral video, tech news, trending, analysis",
-                    "search_keywords": [main_kw, "car", "technology", "city", "future"]
+                    "search_keywords": [main_kw, "car", "technology", "city", "future", "space", "innovation", "concept"]
                 }
             
             data = script_data
-            progress_bar.progress(35)
+            progress_bar.progress(30)
 
             # Step 2: Voiceover Generation
-            status_text.text(f"🎙️ Step 2/3: Synthesizing voiceover... [Est: 10s]")
+            status_text.text(f"🎙️ Step 2/4: Synthesizing voiceover ({target_words} words)... [Est: 10s]")
             audio_raw = "raw_voice.mp3"
             audio_final = "final_voice.mp3"
             
@@ -182,19 +214,20 @@ if generate_btn:
             tts = gTTS(text=data['script'], lang='en', tld=selected_tld, slow=False)
             tts.save(audio_raw)
 
-            cmd_audio = f"ffmpeg -y -i {audio_raw} -filter:a 'atempo=1.20' {audio_final}"
+            cmd_audio = f"ffmpeg -y -i {audio_raw} -filter:a 'atempo=1.05' {audio_final}"
             subprocess.run(cmd_audio, shell=True, check=True)
 
             probe_cmd = f"ffprobe -v error -show_entries format=duration -of default=noprint_wrappers=1:nokey=1 {audio_final}"
             final_audio_dur = float(subprocess.check_output(probe_cmd, shell=True).decode('utf-8').strip())
-            progress_bar.progress(55)
+            progress_bar.progress(50)
 
-            # Step 3: Fetch Real HD Photos (No Colors, No Zoom)
-            status_text.text("🌐 Step 3/3: Downloading real topic HD photos from web... [Est: 10s]")
+            # Step 3: Fetch Real HD Photos
+            status_text.text("🌐 Step 3/4: Downloading HD photos from live web engines... [Est: 10s]")
             
             fps = 24
             total_frames = int(fps * final_audio_dur)
             video_no_audio = "temp_video.mp4"
+            video_with_subtitles = "temp_subtitles.mp4"
             final_mp4 = "final_generated_video.mp4"
             
             custom_video_used = False
@@ -212,47 +245,87 @@ if generate_btn:
                     custom_video_used = True
 
             if not custom_video_used:
-                keywords = data.get("search_keywords", ["car", "technology", "city", "future"])
+                keywords = data.get("search_keywords", ["car", "technology", "city", "future", "space"])
                 for idx, kw in enumerate(keywords):
                     img = fetch_guaranteed_web_photo(kw, width, height, index=idx)
                     if img:
                         scene_images.append(img)
                         
-            # If still no images, force generate from topic terms
             if not custom_video_used and len(scene_images) == 0:
-                for idx in range(4):
+                for idx in range(6):
                     img = fetch_guaranteed_web_photo("technology", width, height, index=idx)
                     if img:
                         scene_images.append(img)
 
-            # Render Clean HD Photo Transitions (Strictly Real Photos)
+            # Fast In-Memory Video Rendering with Subtle Smooth Motion
+            status_text.text("🎥 Step 4/4: Rendering motion video & burning subtitles... [Est: 15s]")
             if not custom_video_used and len(scene_images) > 0:
                 fourcc = cv2.VideoWriter_fourcc(*'mp4v')
                 out = cv2.VideoWriter(video_no_audio, fourcc, fps, (width, height))
+                
                 frames_per_scene = max(1, total_frames // len(scene_images))
 
                 for frame_num in range(total_frames):
                     scene_idx = min(frame_num // frames_per_scene, len(scene_images) - 1)
-                    active_scene = scene_images[scene_idx].copy()
+                    scene_frame_offset = frame_num % frames_per_scene
                     
-                    resized_scene = active_scene.resize((width, height), Image.Resampling.LANCZOS)
+                    base_img = np.array(scene_images[scene_idx].resize((width + 100, height + 100), Image.Resampling.LANCZOS))
                     
-                    temp_frame_path = "temp_render_frame.png"
-                    resized_scene.save(temp_frame_path)
-                    cv_img = cv2.imread(temp_frame_path)
-                    out.write(cv_img)
+                    progress_in_scene = scene_frame_offset / float(frames_per_scene)
+                    shift_x = int(progress_in_scene * 80)
+                    shift_y = int(progress_in_scene * 40)
                     
-                    current_p = 60 + int((frame_num / total_frames) * 35)
-                    progress_bar.progress(min(current_p, 95))
+                    cropped_frame = base_img[shift_y:shift_y + height, shift_x:shift_x + width]
+                    cv_bgr_frame = cv2.cvtColor(cropped_frame, cv2.COLOR_RGB2BGR)
+                    
+                    out.write(cv_bgr_frame)
+                    
+                    if frame_num % 100 == 0:
+                        current_p = 50 + int((frame_num / total_frames) * 35)
+                        progress_bar.progress(min(current_p, 85))
 
                 out.release()
 
-                cmd_merge = f"ffmpeg -y -i {video_no_audio} -i {audio_final} -c:v libx264 -pix_fmt yuv420p -c:a aac -shortest {final_mp4}"
+                # Burn Subtitles onto Video using FFmpeg if enabled
+                video_to_merge = video_no_audio
+                if enable_subtitles:
+                    try:
+                        chunks = split_script_into_chunks(data['script'], max_words=4)
+                        srt_content = ""
+                        time_per_chunk = final_audio_dur / float(len(chunks))
+                        
+                        for idx, chunk in enumerate(chunks):
+                            start_s = idx * time_per_chunk
+                            end_s = (idx + 1) * time_per_chunk
+                            
+                            def fmt_time(s):
+                                hrs = int(s // 3600)
+                                mins = int((s % 3600) // 60)
+                                secs = int(s % 60)
+                                millis = int((s - int(s)) * 1000)
+                                return f"{hrs:02d}:{mins:02d}:{secs:02d},{millis:03d}"
+                                
+                            srt_content += f"{idx + 1}\n{fmt_time(start_s)} --> {fmt_time(end_s)}\n{chunk.upper()}\n\n"
+                            
+                        with open("subtitles.srt", "w", encoding="utf-8") as f:
+                            f.write(srt_content)
+                            
+                        font_size = 22 if is_short else 28
+                        subtitle_filter = f"subtitles=subtitles.srt:force_style='FontSize={font_size},PrimaryColour=&H00FFFFFF,OutlineColour=&H00000000,BackColour=&H80000000,BorderStyle=4,Alignment=2,MarginV=60'"
+                        
+                        cmd_srt = f"ffmpeg -y -i {video_no_audio} -vf \"{subtitle_filter}\" -c:v libx264 {video_with_subtitles}"
+                        subprocess.run(cmd_srt, shell=True, check=True)
+                        video_to_merge = video_with_subtitles
+                    except Exception as srt_err:
+                        pass # Fallback to video without burned subtitles if font issue occurs
+
+                # Merge Video and Voiceover
+                cmd_merge = f"ffmpeg -y -i {video_to_merge} -i {audio_final} -c:v libx264 -pix_fmt yuv420p -c:a aac -shortest {final_mp4}"
                 subprocess.run(cmd_merge, shell=True, check=True)
 
             progress_bar.progress(100)
             elapsed_time = time.time() - start_time
-            status_text.success(f"🎉 Real Photos Video Production Complete in {elapsed_time:.1f}s!")
+            status_text.success(f"🎉 Complete! Video Duration: {final_audio_dur:.1f}s (Rendered in {elapsed_time:.1f}s)")
 
             st.session_state.generated_data = {
                 "hooks": data['hooks'],
