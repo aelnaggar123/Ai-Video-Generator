@@ -13,19 +13,19 @@ from PIL import Image
 st.set_page_config(page_title="A & W AI Video Creation Tool", page_icon="🎬", layout="wide")
 
 st.title("🎬 A & W AI Video Creation Tool")
-st.caption("Real HD Stock Visuals (Pexels), Custom Media Uploads, Multi-Gender Voices & Precise Duration Control.")
+st.caption("Automated Scripting, Logical Smart Visual Search, Multi-Gender Voices & Guaranteed Video Rendering.")
 
 # Initialize Session State
 if "generated_data" not in st.session_state:
     st.session_state.generated_data = None
 
-# Default Gemini Key
-DEFAULT_GEMINI_KEY = "AQ.Ab8RN6Ia5F0k6PkHKVkdVBAsiBm9mBHfX9zXFZN27QMIRRt5ig"
+# Retrieve Gemini Key securely from Streamlit Secrets or Manual Input
+secret_gemini_key = st.secrets.get("GEMINI_API_KEY", "") if hasattr(st, "secrets") else ""
 
 # Sidebar Configuration
 st.sidebar.header("⚙️ API Keys & Settings")
-gemini_key = st.sidebar.text_input("Gemini API Key", value=DEFAULT_GEMINI_KEY, type="password", help="Gemini API Key for scripting & tags")
-pexels_key = st.sidebar.text_input("Pexels API Key (Optional for Stock Videos)", value="", type="password", help="Get free key from pexels.com/api for real HD video clips")
+gemini_key = st.sidebar.text_input("Gemini API Key", value=secret_gemini_key, type="password", help="Gemini API Key for scripting & intelligent search keywords")
+pexels_key = st.sidebar.text_input("Pexels API Key (Optional)", value="", type="password", help="Get free key from pexels.com/api for real stock HD visuals")
 
 voice_option = st.sidebar.selectbox(
     "🎙️ Voice Accent & Gender:",
@@ -77,11 +77,12 @@ with col2:
     else:
         duration = 0.75 # ~45 seconds
 
-generate_btn = st.button("🚀 Generate Video & Strategy", type="primary", use_container_width=True)
+generate_btn = st.button("🚀 Generate Complete Video", type="primary", use_container_width=True)
 
 if generate_btn:
-    if not gemini_key:
-        st.error("⚠️ Please enter your Gemini API Key in the sidebar!")
+    active_key = gemini_key if gemini_key else secret_gemini_key
+    if not active_key:
+        st.error("⚠️ Please enter your Gemini API Key in the sidebar or save it in Streamlit Secrets!")
     elif not topic:
         st.warning("⚠️ Please provide a video topic or idea!")
     else:
@@ -94,26 +95,24 @@ if generate_btn:
             width, height = (720, 1280) if is_short else (1280, 720)
             target_words = int(duration * 60 * 2.3) if is_short else int(duration * 60 * 2.2)
             
-            # Step 1: Script, Tags, and Visual Search Queries via Gemini
-            status_text.text("📝 Step 1/3: Crafting High-CTR Script, SEO Tags & Stock Search Queries... [Est: 5s]")
+            # Step 1: Intelligent Script & Logical Search Keywords Generation
+            status_text.text("📝 Step 1/3: Analyzing idea, writing script & extracting logical keywords... [Est: 5s]")
             progress_bar.progress(15)
             
-            url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-3.8-flash:generateContent?key={gemini_key}"
+            url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-3.8-flash:generateContent?key={active_key}"
             prompt = f"""
             The user provided this video topic/idea (Franco, Arabic, or English): '{topic}'.
-            Act as a top YouTube growth hacker. Create a viral video production package in English.
-            Tone: {style}. Target word count strictly around {target_words} words.
+            Act as an elite YouTube content creator and producer. 
+            1. Write an engaging voiceover script in English based on the core meaning of the topic. Tone: {style}. Word count around {target_words} words.
+            2. Extract 3 broad, logical English search keywords/phrases (simple 1-2 words like 'luxury car', 'technology', 'futuristic city', 'space rocket') to search for stock images/visuals matching the core meaning.
+            3. Generate 3 short viral hooks and comma-separated SEO tags.
 
             Return JSON format strictly as follows (no markdown wrapping, no extra text):
             {{
-                "hooks": [
-                    "Short punchy hook 1 (Max 6-8 words)",
-                    "Short punchy hook 2 (Max 6-8 words)",
-                    "Short punchy hook 3 (Max 6-8 words)"
-                ],
-                "script": "The full spoken voiceover narration text in English matching the target word count...",
-                "tags": "comma separated SEO tags, trending keywords, specific phrases related to topic",
-                "search_keywords": ["simple search query 1", "simple search query 2", "simple search query 3"]
+                "hooks": ["Hook 1", "Hook 2", "Hook 3"],
+                "script": "Full voiceover narration script...",
+                "tags": "tag1, tag2, tag3",
+                "search_keywords": ["keyword1", "keyword2", "keyword3"]
             }}
             """
             
@@ -136,8 +135,8 @@ if generate_btn:
             data = json.loads(raw_text)
             progress_bar.progress(35)
 
-            # Step 2: Voiceover Audio Generation & Duration Probe
-            status_text.text(f"🎙️ Step 2/3: Generating Voiceover with {voice_option}... [Est: 10s]")
+            # Step 2: Voiceover Generation
+            status_text.text(f"🎙️ Step 2/3: Synthesizing voiceover with {voice_option}... [Est: 10s]")
             audio_raw = "raw_voice.mp3"
             audio_final = "final_voice.mp3"
             
@@ -152,8 +151,8 @@ if generate_btn:
             final_audio_dur = float(subprocess.check_output(probe_cmd, shell=True).decode('utf-8').strip())
             progress_bar.progress(60)
 
-            # Step 3: Fetch Stock Visuals (or Custom Upload / Fallback Canvas)
-            status_text.text("🎥 Step 3/3: Gathering Stock Visuals & Rendering Final Video... [Est: 15s]")
+            # Step 3: Visuals Assembly (Pexels Stock -> Custom Upload -> Fallback Cinematic Canvases)
+            status_text.text("🎥 Step 3/3: Assembling visual scenes and rendering final video... [Est: 15s]")
             
             fps = 24
             total_frames = int(fps * final_audio_dur)
@@ -163,7 +162,7 @@ if generate_btn:
             custom_video_used = False
             scene_images = []
 
-            # Option A: User Custom File Upload
+            # 1. Custom File Upload
             if uploaded_file is not None:
                 if uploaded_file.type.startswith("image"):
                     custom_img = Image.open(uploaded_file).convert("RGB")
@@ -175,34 +174,38 @@ if generate_btn:
                     subprocess.run(cmd_vid_audio, shell=True, check=True)
                     custom_video_used = True
 
-            # Option B: Pexels API Stock Video/Image Fetch
-            if not custom_video_used and pexels_key and len(scene_images) == 0:
-                keywords = data.get("search_keywords", [topic])
+            # 2. Pexels Stock Visual Search using Gemini's Logical Keywords
+            if not custom_video_used and pexels_key:
+                keywords = data.get("search_keywords", ["technology"])
                 headers_pexels = {"Authorization": pexels_key}
                 
                 for kw in keywords[:3]:
                     try:
-                        p_url = f"https://api.pexels.com/v1/search?query={kw}&per_page=1"
-                        res_p = requests.get(p_url, headers=headers_pexels, timeout=5)
+                        p_url = f"https://api.pexels.com/v1/search?query={kw.replace(' ', '%20')}&per_page=1"
+                        res_p = requests.get(p_url, headers=headers_pexels, timeout=4)
                         if res_p.status_code == 200:
                             p_data = res_p.json()
                             if p_data.get("photos"):
                                 img_src = p_data["photos"][0]["src"]["large"]
-                                img_bytes = requests.get(img_src, timeout=5).content
+                                img_bytes = requests.get(img_src, timeout=4).content
                                 with open("pexels_temp.jpg", "wb") as f:
                                     f.write(img_bytes)
                                 scene_images.append(Image.open("pexels_temp.jpg").convert("RGB"))
                     except:
                         pass
 
-            # Option C: Fallback High-Contrast Visual Canvases (Guaranteed No Black Screens)
+            # 3. Guaranteed High-Grade Cinematic Fallback Canvases (If Pexels key is missing or failed)
             if not custom_video_used and len(scene_images) == 0:
-                colors = [(15, 23, 42), (30, 27, 75), (88, 28, 135)]
-                for col in colors:
+                cinematic_colors = [
+                    (15, 23, 42),    # Deep Dark Blue
+                    (49, 46, 129),   # Indigo Purple
+                    (88, 28, 135)    # Rich Vibrant Violet
+                ]
+                for col in cinematic_colors:
                     canvas = Image.new('RGB', (width, height), color=col)
                     scene_images.append(canvas)
 
-            # Render Frame Sequence & Smooth Motion Zooming
+            # Render Video Frames with Smooth Motion Zoom
             if not custom_video_used:
                 fourcc = cv2.VideoWriter_fourcc(*'mp4v')
                 out = cv2.VideoWriter(video_no_audio, fourcc, fps, (width, height))
@@ -212,8 +215,8 @@ if generate_btn:
                     scene_idx = min(frame_num // frames_per_scene, len(scene_images) - 1)
                     base_scene = scene_images[scene_idx].copy()
                     
-                    # Clean Dynamic Zooming
-                    zoom_factor = 1.0 + 0.06 * np.sin(frame_num / 18.0)
+                    # Smooth Dynamic Zoom Effect
+                    zoom_factor = 1.0 + 0.05 * np.sin(frame_num / 20.0)
                     zw, zh = int(width / zoom_factor), int(height / zoom_factor)
                     zx, zy = (width - zw) // 2, (height - zh) // 2
                     cropped = base_scene.crop((zx, zy, zx + zw, zy + zh))
@@ -229,7 +232,7 @@ if generate_btn:
 
                 out.release()
 
-                # Merge Video and Final Audio
+                # Merge Video and Audio with Universal Compatibility Encoding
                 cmd_merge = f"ffmpeg -y -i {video_no_audio} -i {audio_final} -c:v libx264 -pix_fmt yuv420p -c:a aac -shortest {final_mp4}"
                 subprocess.run(cmd_merge, shell=True, check=True)
 
@@ -237,7 +240,7 @@ if generate_btn:
             elapsed_time = time.time() - start_time
             status_text.success(f"🎉 Production Complete in {elapsed_time:.1f}s!")
 
-            # Save in Session State
+            # Store in Session State
             st.session_state.generated_data = {
                 "hooks": data['hooks'],
                 "script": data['script'],
