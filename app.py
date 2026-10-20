@@ -14,7 +14,7 @@ from io import BytesIO
 st.set_page_config(page_title="A & W AI Video Creation Tool", page_icon="🎬", layout="wide")
 
 st.title("🎬 A & W AI Video Creation Tool")
-st.caption("Automated Scripting, Smart Topic Visual Fetching (Real Web HD Photos), Voices & Dynamic Assembly.")
+st.caption("Automated Scripting, Smart Real Web HD Visuals, Voices & Clean Assembly.")
 
 # Initialize Session State
 if "generated_data" not in st.session_state:
@@ -77,26 +77,31 @@ with col2:
     else:
         duration = 0.75
 
-generate_btn = st.button("🚀 Generate Video with Real Photos", type="primary", use_container_width=True)
+generate_btn = st.button("🚀 Generate Video with Real Web Photos", type="primary", use_container_width=True)
 
-def fetch_real_web_image(keyword, width, height):
+# Helper function to fetch guaranteed REAL HD photos directly from live web image providers
+def fetch_guaranteed_web_photo(keyword, width, height, index=0):
+    clean_kw = keyword.strip().replace(" ", ",").lower()
+    
+    # Provider 1: LoremFlickr (Reliable live topic tag photo engine)
     try:
-        clean_kw = keyword.strip().replace(" ", "-").lower()
-        url = f"https://source.unsplash.com/{width}x{height}/?{clean_kw}"
-        res = requests.get(url, timeout=5)
-        if res.status_code == 200 and len(res.content) > 5000:
+        url = f"https://loremflickr.com/{width}/{height}/{clean_kw}?lock={index + 10}"
+        headers = {"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64)"}
+        res = requests.get(url, headers=headers, timeout=6)
+        if res.status_code == 200 and len(res.content) > 10000:
             return Image.open(BytesIO(res.content)).convert("RGB")
     except:
         pass
 
+    # Provider 2: Picsum photos with topic seeds
     try:
-        url_alt = f"https://loremflickr.com/{width}/{height}/{keyword.strip().replace(' ', ',')}"
-        res_alt = requests.get(url_alt, timeout=5)
-        if res_alt.status_code == 200 and len(res_alt.content) > 5000:
+        url_alt = f"https://picsum.photos/seed/{clean_kw}{index}/{width}/{height}"
+        res_alt = requests.get(url_alt, timeout=6)
+        if res_alt.status_code == 200 and len(res_alt.content) > 10000:
             return Image.open(BytesIO(res_alt.content)).convert("RGB")
     except:
         pass
-        
+
     return None
 
 if generate_btn:
@@ -114,12 +119,12 @@ if generate_btn:
             width, height = (720, 1280) if is_short else (1280, 720)
             target_words = int(duration * 60 * 2.3) if is_short else int(duration * 60 * 2.2)
             
-            status_text.text("📝 Step 1/3: Analyzing topic, writing script & extracting visual keywords... [Est: 5s]")
+            status_text.text("📝 Step 1/3: Writing script & extracting visual keywords... [Est: 5s]")
             progress_bar.progress(15)
             
             script_data = None
             
-            # Try Gemini if a valid AIza key is provided
+            # Use Gemini if valid key provided
             if active_gemini_key and active_gemini_key.startswith("AIza"):
                 try:
                     url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key={active_gemini_key}"
@@ -127,14 +132,14 @@ if generate_btn:
                     The user provided this video topic/idea: '{topic}'.
                     Act as an elite YouTube content creator and producer. 
                     1. Write an engaging voiceover script in English based on the core meaning. Tone: {style}. Word count around {target_words} words.
-                    2. Extract 4 specific, real-world English visual search keywords related to the topic.
+                    2. Extract 5 specific, real-world English visual search keywords related to the topic (e.g. 'car', 'technology', 'city', 'future', 'space').
                     3. Generate 3 short viral hooks and comma-separated SEO tags.
                     Return JSON format strictly as follows (no markdown wrapping, no extra text):
                     {{
                         "hooks": ["Hook 1", "Hook 2", "Hook 3"],
                         "script": "Full voiceover narration script...",
                         "tags": "tag1, tag2, tag3",
-                        "search_keywords": ["keyword1", "keyword2", "keyword3", "keyword4"]
+                        "search_keywords": ["keyword1", "keyword2", "keyword3", "keyword4", "keyword5"]
                     }}
                     """
                     payload = {"contents": [{"parts": [{"text": prompt}]}]}
@@ -150,10 +155,10 @@ if generate_btn:
                 except:
                     pass
             
-            # Robust Smart Fallback if Gemini key is missing or blocked (Guaranteed execution)
+            # Smart Fallback Script Generator
             if not script_data:
-                clean_topic_words = topic.split()[:3]
-                fallback_kw = " ".join(clean_topic_words) if clean_topic_words else "technology"
+                clean_topic_words = topic.split()[:2]
+                main_kw = clean_topic_words[0] if clean_topic_words else "technology"
                 script_data = {
                     "hooks": [
                         f"You won't believe what is happening with {topic}!",
@@ -162,7 +167,7 @@ if generate_btn:
                     ],
                     "script": f"Welcome back everyone. Today we are diving deep into a fascinating topic that has taken the internet by storm: {topic}. As we examine the details closely, experts are split on what this means for the future. Stay tuned as we break down all the key aspects, the hidden implications, and what you need to know right now.",
                     "tags": f"{topic}, viral video, tech news, trending, analysis",
-                    "search_keywords": [fallback_kw, "technology innovation", "futuristic concept", "modern business"]
+                    "search_keywords": [main_kw, "car", "technology", "city", "future"]
                 }
             
             data = script_data
@@ -184,8 +189,8 @@ if generate_btn:
             final_audio_dur = float(subprocess.check_output(probe_cmd, shell=True).decode('utf-8').strip())
             progress_bar.progress(55)
 
-            # Step 3: Fetch Real Web Visuals
-            status_text.text("🌐 Step 3/3: Downloading real HD photos related to topic from web... [Est: 10s]")
+            # Step 3: Fetch Real HD Photos (No Colors, No Zoom)
+            status_text.text("🌐 Step 3/3: Downloading real topic HD photos from web... [Est: 10s]")
             
             fps = 24
             total_frames = int(fps * final_audio_dur)
@@ -207,19 +212,20 @@ if generate_btn:
                     custom_video_used = True
 
             if not custom_video_used:
-                keywords = data.get("search_keywords", [topic, "technology", "modern"])
-                for kw in keywords:
-                    real_img = fetch_real_web_image(kw, width, height)
-                    if real_img:
-                        scene_images.append(real_img)
+                keywords = data.get("search_keywords", ["car", "technology", "city", "future"])
+                for idx, kw in enumerate(keywords):
+                    img = fetch_guaranteed_web_photo(kw, width, height, index=idx)
+                    if img:
+                        scene_images.append(img)
                         
+            # If still no images, force generate from topic terms
             if not custom_video_used and len(scene_images) == 0:
-                default_kw_list = ["technology", "car", "future", "city"]
-                for kw in default_kw_list:
-                    real_img = fetch_real_web_image(kw, width, height)
-                    if real_img:
-                        scene_images.append(real_img)
+                for idx in range(4):
+                    img = fetch_guaranteed_web_photo("technology", width, height, index=idx)
+                    if img:
+                        scene_images.append(img)
 
+            # Render Clean HD Photo Transitions (Strictly Real Photos)
             if not custom_video_used and len(scene_images) > 0:
                 fourcc = cv2.VideoWriter_fourcc(*'mp4v')
                 out = cv2.VideoWriter(video_no_audio, fourcc, fps, (width, height))
