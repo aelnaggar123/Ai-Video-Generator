@@ -20,12 +20,12 @@ st.caption("Automated Scripting, Smart Topic Visual Fetching (Real Web HD Photos
 if "generated_data" not in st.session_state:
     st.session_state.generated_data = None
 
-# Retrieve API Keys automatically from Streamlit Secrets
+# Retrieve API Key from Streamlit Secrets or default to your AQ key
 secret_gemini_key = st.secrets.get("GEMINI_API_KEY", "AQ.Ab8RN6KQIGkmobkIijJY3qpaRtiYEEa5aVDYRW0EUC-aqTI8kw") if hasattr(st, "secrets") else "AQ.Ab8RN6KQIGkmobkIijJY3qpaRtiYEEa5aVDYRW0EUC-aqTI8kw"
 
 # Sidebar Configuration
 st.sidebar.header("⚙️ Settings & Voices")
-gemini_key = st.sidebar.text_input("Gemini API Key", value=secret_gemini_key, type="password")
+gemini_key = st.sidebar.text_input("Gemini API Key (AQ... or AIza...)", value=secret_gemini_key, type="password")
 
 voice_option = st.sidebar.selectbox(
     "🎙️ Voice Accent & Gender:",
@@ -79,26 +79,21 @@ with col2:
 
 generate_btn = st.button("🚀 Generate Video with Real Photos", type="primary", use_container_width=True)
 
-# Helper function to download real HD photos from web based on topic keywords without API keys
 def fetch_real_web_image(keyword, width, height):
     try:
-        # Source 1: Direct High-Res Unsplash Source Stream
         clean_kw = keyword.strip().replace(" ", "-").lower()
         url = f"https://source.unsplash.com/{width}x{height}/?{clean_kw}"
         res = requests.get(url, timeout=5)
         if res.status_code == 200 and len(res.content) > 5000:
-            img = Image.open(BytesIO(res.content)).convert("RGB")
-            return img
+            return Image.open(BytesIO(res.content)).convert("RGB")
     except:
         pass
 
     try:
-        # Source 2: Direct High-Res Picsum/LoremFlickr Visual Stream
         url_alt = f"https://loremflickr.com/{width}/{height}/{keyword.strip().replace(' ', ',')}"
         res_alt = requests.get(url_alt, timeout=5)
         if res_alt.status_code == 200 and len(res_alt.content) > 5000:
-            img = Image.open(BytesIO(res_alt.content)).convert("RGB")
-            return img
+            return Image.open(BytesIO(res_alt.content)).convert("RGB")
     except:
         pass
         
@@ -121,12 +116,20 @@ if generate_btn:
             width, height = (720, 1280) if is_short else (1280, 720)
             target_words = int(duration * 60 * 2.3) if is_short else int(duration * 60 * 2.2)
             
-            # Step 1: Automated Script & Logical Keywords Generation
             status_text.text("📝 Step 1/3: AI is writing script and extracting topic visual keywords... [Est: 5s]")
             progress_bar.progress(15)
             
-            url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key={active_gemini_key}"
-            headers = {'Content-Type': 'application/json'}
+            # Smart URL and Header configuration to handle AQ keys properly
+            url = "https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent"
+            if active_gemini_key.startswith("AIza"):
+                url = f"{url}?key={active_gemini_key}"
+                headers = {'Content-Type': 'application/json'}
+            else:
+                # For AQ keys, use Authorization Bearer / Key format
+                headers = {
+                    'Content-Type': 'application/json',
+                    'Authorization': f'Bearer {active_gemini_key}'
+                }
             
             prompt = f"""
             The user provided this video topic/idea: '{topic}'.
@@ -147,10 +150,11 @@ if generate_btn:
             payload = {"contents": [{"parts": [{"text": prompt}]}]}
             response = requests.post(url, headers=headers, data=json.dumps(payload))
             
+            # Fallback attempt if authorization bearer fails
             if response.status_code != 200:
-                headers_auth = {'Content-Type': 'application/json', 'Authorization': f'Bearer {active_gemini_key}'}
-                url_alt = "https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent"
-                response = requests.post(url_alt, headers=headers_auth, data=json.dumps(payload))
+                url_fallback = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key={active_gemini_key}"
+                headers_fallback = {'Content-Type': 'application/json'}
+                response = requests.post(url_fallback, headers=headers_fallback, data=json.dumps(payload))
                 
             if response.status_code != 200:
                 st.error(f"API Error ({response.status_code}): {response.text}")
@@ -193,7 +197,6 @@ if generate_btn:
             custom_video_used = False
             scene_images = []
 
-            # 1. Custom User Upload
             if uploaded_file is not None:
                 if uploaded_file.type.startswith("image"):
                     custom_img = Image.open(uploaded_file).convert("RGB")
@@ -205,7 +208,6 @@ if generate_btn:
                     subprocess.run(cmd_vid_audio, shell=True, check=True)
                     custom_video_used = True
 
-            # 2. Automated Web Search for Real HD Photos Matching Keywords
             if not custom_video_used:
                 keywords = data.get("search_keywords", [topic, "technology", "modern"])
                 for kw in keywords:
@@ -213,7 +215,6 @@ if generate_btn:
                     if real_img:
                         scene_images.append(real_img)
                         
-            # Backup safety if web image downloads fail
             if not custom_video_used and len(scene_images) == 0:
                 default_kw_list = ["technology", "car", "future", "city"]
                 for kw in default_kw_list:
@@ -221,7 +222,6 @@ if generate_btn:
                     if real_img:
                         scene_images.append(real_img)
 
-            # Render Clean Transitions Between Real Photos (No Zoom, No Plain Colors)
             if not custom_video_used and len(scene_images) > 0:
                 fourcc = cv2.VideoWriter_fourcc(*'mp4v')
                 out = cv2.VideoWriter(video_no_audio, fourcc, fps, (width, height))
@@ -231,7 +231,6 @@ if generate_btn:
                     scene_idx = min(frame_num // frames_per_scene, len(scene_images) - 1)
                     active_scene = scene_images[scene_idx].copy()
                     
-                    # Resize cleanly to video aspect ratio
                     resized_scene = active_scene.resize((width, height), Image.Resampling.LANCZOS)
                     
                     temp_frame_path = "temp_render_frame.png"
