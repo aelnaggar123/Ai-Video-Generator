@@ -15,7 +15,7 @@ from io import BytesIO
 st.set_page_config(page_title="A & W AI Video Creation Tool", page_icon="🎬", layout="wide")
 
 st.title("🎬 A & W AI Video Creation Tool")
-st.caption("Professional AI Video Studio: Ultra-Realistic Voices, Smart Intent Storytelling, Non-Copyrighted Music & Dynamic Subtitles.")
+st.caption("Professional AI Video Studio: Made by Eng. Ahmed El Naggar | Ultra-Realistic Voices, Smart Intent Storytelling & Non-Copyrighted Music.")
 
 # Initialize Session State
 if "generated_data" not in st.session_state:
@@ -28,7 +28,7 @@ col_top1, col_top2 = st.columns([2, 1])
 
 with col_top1:
     topic = st.text_input(
-        "💡 What is your video about? (Talk to it naturally - e.g., 'اعملي فيديو عن كذا' or 'Announcing we are having a baby'):", 
+        "💡 What is your video about?", 
         value="",
         placeholder="Type naturally here... (e.g. My wife is pregnant, or explaining quantum physics)"
     )
@@ -169,7 +169,6 @@ if generate_btn:
             raw_input = topic.strip()
             low_input = raw_input.lower()
             
-            # Smart cleaning: Strip away commands like "اعملي فيديو عن", "e3mely video", "create a video about" to extract pure intent
             cleaned_intent = raw_input
             for prefix in ["اعملي فيديو عن", "عملي فيديو عن", "عايز فيديو عن", "سوي فيديو عن", "e3mely video a3len", "e3mely video 3an", "create a video about", "make a video on", "video about"]:
                 if low_input.startswith(prefix):
@@ -178,7 +177,6 @@ if generate_btn:
 
             cleaned_low = cleaned_intent.lower()
             
-            # Intelligent Context Matcher based on real intent
             if any(w in cleaned_low for w in ["hamil", "pregnancy", "pregrant", "baby", "حامل", "مراتي"]):
                 base_paragraphs = [
                     "I still cannot forget the exact feeling of walking through the front door after a long day at work, completely unaware that my life was about to change forever.",
@@ -198,7 +196,6 @@ if generate_btn:
                     "My wife's incredible surprise that changed everything!"
                 ]
             else:
-                # Built from user's actual cleaned intent safely
                 base_paragraphs = [
                     f"Let's talk about something truly fascinating today: {cleaned_intent}.",
                     "When we look closer at this subject, it reveals incredible details and perspectives that change how we see things.",
@@ -216,7 +213,6 @@ if generate_btn:
                     "Everything you need to know explained clearly!"
                 ]
 
-            # Dynamic expansion algorithm with zero duplication
             custom_script = ""
             para_idx = 0
             words_count = 0
@@ -348,7 +344,7 @@ if generate_btn:
                                 millis = int((s - int(s)) * 1000)
                                 return f"{hrs:02d}:{mins:02d}:{secs:02d},{millis:03d}"
                                 
-                            srt_content += f"{idx + 1}\n{fmt_time(start_s)} --> {fmt_time(end_s)}\n{chunk.upper()}\n\.nn"
+                            srt_content += f"{idx + 1}\n{fmt_time(start_s)} --> {fmt_time(end_s)}\n{chunk.upper()}\n\n"
                             
                         with open("subtitles.srt", "w", encoding="utf-8") as f:
                             f.write(srt_content)
