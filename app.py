@@ -5,8 +5,9 @@ import os
 import cv2
 import subprocess
 import time
+import asyncio
+import edge_tts
 import numpy as np
-from gtts import gTTS
 from PIL import Image
 from io import BytesIO
 
@@ -14,36 +15,35 @@ from io import BytesIO
 st.set_page_config(page_title="A & W AI Video Creation Tool", page_icon="🎬", layout="wide")
 
 st.title("🎬 A & W AI Video Creation Tool")
-st.caption("Advanced Smart Video Creation Tool, Real HD Visuals, Voices, Subtitles & Smooth Motion.")
+st.caption("Ultra-Realistic Human Neural Voices, Real HD Visuals, Subtitles & Smooth Motion.")
 
 # Initialize Session State
 if "generated_data" not in st.session_state:
     st.session_state.generated_data = None
 
 # Sidebar Configuration
-st.sidebar.header("⚙️ Settings & Voices")
+st.sidebar.header("⚙️ Settings & Realistic Human Voices")
 gemini_key = st.sidebar.text_input("Gemini API Key (Optional / AIza...)", value="", type="password")
 
-voice_option = st.sidebar.selectbox(
-    "🎙️ Voice Accent & Gender:",
-    [
-        "🇺🇸 US Female (Standard Energetic)",
-        "🇺🇸 US Male (Deep & Authoritative)",
-        "🇬🇧 UK Female (Dramatic & Elegant)",
-        "🇬🇧 UK Male (Deep Narration)",
-        "🇦🇺 Australian Male (Casual)",
-        "🇨🇦 Canadian Female (Smooth)"
-    ]
+# High-Quality Human Neural Voice Mapping (Microsoft Edge Neural Engine)
+voice_options_map = {
+    "👧 Kids / Young Girl (Ana - Bright & Natural)": "en-US-AnaNeural",
+    "👦 Young Boy / Kid (Eric - Playful & Dynamic)": "en-US-EricNeural",
+    "👧 Young Girl / Storyteller (Maisie - Soft & Warm)": "en-GB-MaisieNeural",
+    "👩 US Female (Jenny - Friendly & Energetic)": "en-US-JennyNeural",
+    "👨 US Male (Guy - Deep & Natural Narration)": "en-US-GuyNeural",
+    "👩 UK Female (Sonia - Elegant & Expressive)": "en-GB-SoniaNeural",
+    "👨 UK Male (Ryan - Clear & Professional)": "en-GB-RyanNeural",
+    "👨 Australian Male (William - Casual & Warm)": "en-AU-WilliamNeural",
+    "👩 Canadian Female (Clara - Smooth & Clear)": "en-CA-ClaraNeural"
+}
+
+voice_option_label = st.sidebar.selectbox(
+    "🎙️ Choose Human Voice Character:",
+    list(voice_options_map.keys())
 )
 
-tld_map = {
-    "🇺🇸 US Female (Standard Energetic)": "com",
-    "🇺🇸 US Male (Deep & Authoritative)": "us",
-    "🇬🇧 UK Female (Dramatic & Elegant)": "co.uk",
-    "🇬🇧 UK Male (Deep Narration)": "co.uk",
-    "🇦🇺 Australian Male (Casual)": "com.au",
-    "🇨🇦 Canadian Female (Smooth)": "ca"
-}
+selected_voice_code = voice_options_map[voice_option_label]
 
 if st.sidebar.button("🔄 Start New Project", use_container_width=True):
     st.session_state.generated_data = None
@@ -76,9 +76,9 @@ with col2:
 
 enable_subtitles = st.checkbox("💬 Burn-in Dynamic Subtitles on Video", value=True)
 
-generate_btn = st.button("🚀 Generate Video Now", type="primary", use_container_width=True)
+generate_btn = st.button("🚀 Generate Video with Realistic Human Voice", type="primary", use_container_width=True)
 
-# Helper function to fetch guaranteed REAL HD photos directly from live web image providers
+# Helper function to fetch guaranteed REAL HD photos
 def fetch_guaranteed_web_photo(keyword, width, height, index=0):
     clean_kw = keyword.strip().replace(" ", ",").lower()
     try:
@@ -114,25 +114,34 @@ def split_script_into_chunks(script_text, max_words=4):
         chunks.append(" ".join(current_chunk))
     return chunks
 
+# Async Generator for Edge Realistic Human Voice
+async def generate_human_voice(text, voice_code, output_file):
+    communicate = edge_tts.Communicate(text, voice_code)
+    await communicate.save(output_file)
+
 if generate_btn:
     if not topic:
-        st.warning("⚠️ يرجى كتابة فكرة الفيديو أولاً!")
+        st.warning("⚠️ Please provide a video topic or idea!")
     else:
+        status_container = st.empty()
+        metric_container = st.empty()
         progress_bar = st.progress(0)
-        status_text = st.empty()
         start_time = time.time()
         
+        def update_progress(percent, text):
+            progress_bar.progress(percent)
+            metric_container.metric(label="📊 Production Progress", value=f"{percent}%", delta=f"{percent} out of 100%")
+            status_container.info(text)
+
         try:
             is_short = (video_format == "YouTube Short (30-59 sec)")
             width, height = (720, 1280) if is_short else (1280, 720)
             target_words = int(duration * 135) if not is_short else int(duration * 60 * 2.2)
             
-            status_text.text("📝 الخطوة 1/4: توليد السكربت الاحترافي وتحليل كلمات البحث... [Est: 3s]")
-            progress_bar.progress(15)
+            update_progress(10, "📝 Step 1/4: Generating professional script & analyzing keywords...")
             
             script_data = None
             
-            # Try Gemini API ONLY if a valid AIza key is provided
             if gemini_key and gemini_key.startswith("AIza"):
                 try:
                     url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key={gemini_key}"
@@ -161,57 +170,45 @@ if generate_btn:
                 except:
                     pass
             
-            # Robust Smart Dynamic Script Generator (Guaranteed 100% execution without API errors)
             if not script_data:
                 clean_topic_words = [w for w in topic.split() if len(w) > 3]
-                kw1 = clean_topic_words[0] if len(clean_topic_words) > 0 else "technology"
-                kw2 = clean_topic_words[1] if len(clean_topic_words) > 1 else "innovation"
+                kw1 = clean_topic_words[0] if len(clean_topic_words) > 0 else "children"
+                kw2 = clean_topic_words[1] if len(clean_topic_words) > 1 else "learning"
                 
-                # Build custom tailored sentences based directly on the topic
-                custom_script = f"Welcome everyone. Today we are exploring an incredible topic that everyone is talking about: {topic}. When we examine this closely, it opens up entirely new perspectives and creative possibilities. Experts in the field highlight several key elements that make this so important right now. First, the practical applications are transforming how we approach daily challenges. Second, the future outlook points toward even greater advancements. As we continue to witness these changes, understanding the core details of {topic} gives us a clear window into what comes next. Let us break down everything you need to know."
+                custom_script = f"Hello everyone! Today we are exploring an incredible topic that is capturing so much attention: {topic}. When we take a closer look, it brings amazing insights and practical ideas. Let's dive right in and break down everything you need to know step by step."
                 
                 while len(custom_script.split()) < target_words:
-                    custom_script += f" Furthermore, looking deeper into the impact of {topic}, stakeholders are actively noticing the rapid shifts and unique opportunities unfolding in the market today."
+                    custom_script += f" Furthermore, exploring more about {topic}, people everywhere are sharing their wonderful experiences and unique perspectives today."
 
                 script_data = {
                     "hooks": [
-                        f"The ultimate truth about {topic} revealed!",
-                        f"Why everyone is talking about {topic} right now!",
+                        f"The amazing truth about {topic}!",
+                        f"Why everyone is loving {topic} right now!",
                         f"Everything you need to know about {topic}!"
                     ],
                     "script": custom_script,
-                    "tags": f"{topic}, viral, trending, analysis, insights",
-                    "search_keywords =": [kw1, kw2, "modern", "future", "concept", "technology"]
+                    "tags": f"{topic}, viral, kids, learning, trending",
+                    "search_keywords": [kw1, kw2, "kids learning", "happy people", "children smiling", "colorful"]
                 }
             
             data = script_data
-            # Fix search_keywords key syntax safety
-            if "search_keywords =" in data:
-                data["search_keywords"] = data.pop("search_keywords =")
-            elif "search_keywords" not in data:
-                data["search_keywords"] = ["technology", "modern", "future"]
+            update_progress(30, f"🎙️ Step 2/4: Synthesizing Realistic Human Voice ({selected_voice_code})...")
 
-            progress_bar.progress(30)
-
-            # Step 2: Voiceover Generation
-            status_text.text(f"🎙️ الخطوة 2/4: توليد التعليق الصوتي ({target_words} كلمة)... [Est: 5s]")
-            audio_raw = "raw_voice.mp3"
+            # Step 2: Realistic Human Voiceover Generation using Edge-TTS
+            audio_raw = "raw_human_voice.mp3"
             audio_final = "final_voice.mp3"
             
-            selected_tld = tld_map.get(voice_option, "com")
-            tts = gTTS(text=data['script'], lang='en', tld=selected_tld, slow=False)
-            tts.save(audio_raw)
+            asyncio.run(generate_human_voice(data['script'], selected_voice_code, audio_raw))
 
-            cmd_audio = f"ffmpeg -y -i {audio_raw} -filter:a 'atempo=1.05' {audio_final}"
+            cmd_audio = f"ffmpeg -y -i {audio_raw} -filter:a 'atempo=1.02' {audio_final}"
             subprocess.run(cmd_audio, shell=True, check=True)
 
             probe_cmd = f"ffprobe -v error -show_entries format=duration -of default=noprint_wrappers=1:nokey=1 {audio_final}"
             final_audio_dur = float(subprocess.check_output(probe_cmd, shell=True).decode('utf-8').strip())
-            progress_bar.progress(50)
+            
+            update_progress(50, "🌐 Step 3/4: Downloading real HD photos matching topic...")
 
             # Step 3: Fetch Real HD Photos
-            status_text.text("🌐 الخطوة 3/4: جلب صور حقيقية عالية الدقة مرتبطة بالفكرة مباشرة... [Est: 5s]")
-            
             fps = 24
             total_frames = int(fps * final_audio_dur)
             video_no_audio = "temp_video.mp4"
@@ -233,7 +230,7 @@ if generate_btn:
                     custom_video_used = True
 
             if not custom_video_used:
-                keywords = data.get("search_keywords", ["technology", "modern"])
+                keywords = data.get("search_keywords", ["children", "learning"])
                 for idx, kw in enumerate(keywords):
                     img = fetch_guaranteed_web_photo(kw, width, height, index=idx)
                     if img:
@@ -241,12 +238,13 @@ if generate_btn:
                         
             if not custom_video_used and len(scene_images) == 0:
                 for idx in range(6):
-                    img = fetch_guaranteed_web_photo("technology", width, height, index=idx)
+                    img = fetch_guaranteed_web_photo("children", width, height, index=idx)
                     if img:
                         scene_images.append(img)
 
             # Step 4: Render Motion Video & Burn Subtitles
-            status_text.text("🎥 الخطوة 4/4: إنتاج الفيديو بالحركة الملساء ودمج الترجمة... [Est: 10s]")
+            update_progress(70, "🎥 Step 4/4: Rendering motion video & burning subtitles...")
+            
             if not custom_video_used and len(scene_images) > 0:
                 fourcc = cv2.VideoWriter_fourcc(*'mp4v')
                 out = cv2.VideoWriter(video_no_audio, fourcc, fps, (width, height))
@@ -269,8 +267,8 @@ if generate_btn:
                     out.write(cv_bgr_frame)
                     
                     if frame_num % 100 == 0:
-                        current_p = 50 + int((frame_num / total_frames) * 35)
-                        progress_bar.progress(min(current_p, 85))
+                        inner_p = 70 + int((frame_num / total_frames) * 20)
+                        progress_bar.progress(inner_p)
 
                 out.release()
 
@@ -309,10 +307,9 @@ if generate_btn:
                 cmd_merge = f"ffmpeg -y -i {video_to_merge} -i {audio_final} -c:v libx264 -pix_fmt yuv420p -c:a aac -shortest {final_mp4}"
                 subprocess.run(cmd_merge, shell=True, check=True)
 
-            progress_bar.progress(100)
+            update_progress(100, "🎉 Production Complete Successfully!")
             elapsed_time = time.time() - start_time
-            status_text.success(f"🎉 تم الانتاج بنجاح! المدة: {final_audio_dur:.1f} ثانية (في {elapsed_time:.1f} ثانية)")
-
+            
             st.session_state.generated_data = {
                 "hooks": data['hooks'],
                 "script": data['script'],
@@ -324,7 +321,7 @@ if generate_btn:
             }
 
         except Exception as e:
-            st.error(f"حدث خطأ أثناء التنفيذ: {e}")
+            st.error(f"An error occurred: {e}")
 
 if st.session_state.generated_data:
     res = st.session_state.generated_data
@@ -333,13 +330,13 @@ if st.session_state.generated_data:
     col_left, col_right = st.columns([1, 1])
     
     with col_left:
-        st.subheader(f"📺 فيديو النتيجة النهائية ({res['duration']:.1f} ثانية)")
+        st.subheader(f"📺 Final Video Output ({res['duration']:.1f}s)")
         st.video(res["video_path"])
         
         file_label = "Shorts_MP4" if res["is_short"] else "Video_MP4"
         with open(res["video_path"], "rb") as f:
             st.download_button(
-                label=f"⬇️ تحميل {file_label}",
+                label=f"⬇️ Download {file_label}",
                 data=f,
                 file_name=f"AI_{file_label}_{res['topic'][:10].replace(' ', '_')}.mp4",
                 mime="video/mp4",
@@ -347,13 +344,13 @@ if st.session_state.generated_data:
             )
             
     with col_right:
-        st.subheader("🎯 عناوين جاذبة (Hooks)")
+        st.subheader("🎯 High-CTR Short Viral Hooks")
         for idx, hook in enumerate(res["hooks"], 1):
             st.info(f"**Hook {idx}:** {hook}")
             
-        st.subheader("📌 كلمات مفتاحية (SEO Tags)")
+        st.subheader("📌 Highly Related SEO Tags & Keywords")
         st.code(res["tags"], language="text")
 
     st.markdown("---")
-    st.subheader("🎙️ السكربت الصوتي المولّد")
-    st.text_area("نسخ النص:", res["script"], height=180)
+    st.subheader("🎙️ Generated Voiceover Script")
+    st.text_area("Copy Script Text:", res["script"], height=180)
