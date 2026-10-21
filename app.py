@@ -20,12 +20,13 @@ st.caption("Pure Smart AI Scripting, Real HD Visuals, Voices, Subtitles & Smooth
 if "generated_data" not in st.session_state:
     st.session_state.generated_data = None
 
-# Retrieve API Key from Streamlit Secrets
-secret_gemini_key = st.secrets.get("GEMINI_API_KEY", "") if hasattr(st, "secrets") else ""
+# Hard-locked stable key configuration to prevent any reset
+DEFAULT_AQ_KEY = "AQ.Ab8RN6Kqkj0z_my6Y3X9KpFBYeed9q9ZZ9OxtS7CNlN-CczCNQ"
+secret_gemini_key = st.secrets.get("GEMINI_API_KEY", DEFAULT_AQ_KEY) if hasattr(st, "secrets") else DEFAULT_AQ_KEY
 
 # Sidebar Configuration
 st.sidebar.header("⚙️ Settings & Voices")
-gemini_key = st.sidebar.text_input("Gemini API Key (Required for Smart AI)", value=secret_gemini_key, type="password")
+gemini_key = st.sidebar.text_input("Gemini API Key (Locked & Stable)", value=secret_gemini_key, type="password")
 
 voice_option = st.sidebar.selectbox(
     "🎙️ Voice Accent & Gender:",
@@ -118,11 +119,9 @@ def split_script_into_chunks(script_text, max_words=4):
     return chunks
 
 if generate_btn:
-    active_gemini_key = gemini_key if gemini_key else secret_gemini_key
+    active_gemini_key = gemini_key if gemini_key else DEFAULT_AQ_KEY
     
-    if not active_gemini_key:
-        st.error("⚠️ يرجى إدخال مفتاح Gemini API Key في القائمة الجانبية لتجنب القوالب الجاهزة!")
-    elif not topic:
+    if not topic:
         st.warning("⚠️ يرجى كتابة فكرة الفيديو أولاً!")
     else:
         progress_bar = st.progress(0)
@@ -139,16 +138,25 @@ if generate_btn:
             
             script_data = None
             
-            # Requesting strictly from Gemini API with zero fallback templates
-            url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key={active_gemini_key}"
+            # Universal request configuration supporting AQ service account keys and AIza keys
+            url = "https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent"
+            if active_gemini_key.startswith("AIza"):
+                url = f"{url}?key={active_gemini_key}"
+                headers = {'Content-Type': 'application/json'}
+            else:
+                headers = {
+                    'Content-Type': 'application/json',
+                    'Authorization': f'Bearer {active_gemini_key}'
+                }
+            
             prompt = f"""
             You are an elite, professional content creator. 
-            The user entered this exact video topic/idea (it could be in Arabic, Franco, or English): '{topic}'.
+            The user entered this exact video topic/idea: '{topic}'.
             
             Strict Rules:
             1. Analyze the exact meaning of the user's topic deeply. Do NOT copy-paste the topic blindly and do NOT use generic templates.
             2. Write a custom, engaging, highly relevant voiceover script in English that speaks directly about this topic. Tone: {style}. Target Word Count MUST be around EXACTLY {target_words} words.
-            3. Extract 6 to 8 precise, real-world English visual search keywords in English that strictly match the core subject of the topic (e.g., if it's about kids and ABC, keywords should be 'kids learning', 'alphabet letters', 'children education', 'colorful toys', 'kindergarten classroom').
+            3. Extract 6 to 8 precise, real-world English visual search keywords in English that strictly match the core subject of the topic.
             4. Generate 3 short viral hooks and comma-separated SEO tags.
 
             Return JSON format strictly as follows (no markdown wrapping, no extra text):
@@ -160,10 +168,15 @@ if generate_btn:
             }}
             """
             payload = {"contents": [{"parts": [{"text": prompt}]}]}
-            response = requests.post(url, headers={'Content-Type': 'application/json'}, data=json.dumps(payload))
+            response = requests.post(url, headers=headers, data=json.dumps(payload))
             
+            # Fallback request format if bearer token fails
+            if response.status_code != 200 and not active_gemini_key.startswith("AIza"):
+                url_alt = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key={active_gemini_key}"
+                response = requests.post(url_alt, headers={'Content-Type': 'application/json'}, data=json.dumps(payload))
+                
             if response.status_code != 200:
-                st.error(f"خطأ في الاتصال بـ Gemini API ({response.status_code}): تأكد من صحة المفتاح الخاص بك.")
+                st.error(f"خطأ في الاتصال ({response.status_code}): {response.text}")
                 st.stop()
                 
             result = response.json()
@@ -192,7 +205,7 @@ if generate_btn:
             final_audio_dur = float(subprocess.check_output(probe_cmd, shell=True).decode('utf-8').strip())
             progress_bar.progress(50)
 
-            # Step 3: Fetch Real HD Photos matching exact topic keywords
+            # Step 3: Fetch Real HD Photos
             status_text.text("🌐 الخطوة 3/4: جلب صور حقيقية عالية الدقة مرتبطة بالفكرة مباشرة... [Est: 10s]")
             
             fps = 24
