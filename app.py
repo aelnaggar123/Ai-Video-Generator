@@ -15,41 +15,18 @@ from io import BytesIO
 st.set_page_config(page_title="A & W AI Video Creation Tool", page_icon="🎬", layout="wide")
 
 st.title("🎬 A & W AI Video Creation Tool")
-st.caption("Ultra-Realistic Human Neural Voices, Topic Visuals, Non-Copyrighted Music, Subtitles & Smooth Motion.")
+st.caption("Professional AI Video Studio: Ultra-Realistic Voices, Topic Visuals, Non-Copyrighted Music & Dynamic Subtitles.")
 
 # Initialize Session State
 if "generated_data" not in st.session_state:
     st.session_state.generated_data = None
 
-# Sidebar Configuration
-st.sidebar.header("⚙️ Settings & Voices")
-gemini_key = st.sidebar.text_input("Gemini API Key (Optional / AIza...)", value="", type="password")
+st.markdown("---")
 
-# High-Quality Human Neural Voice Mapping (Microsoft Edge Neural Engine)
-voice_options_map = {
-    "👨 US Male (Guy - Deep & Emotional Narration)": "en-US-GuyNeural",
-    "👩 US Female (Jenny - Friendly & Warm)": "en-US-JennyNeural",
-    "👨 UK Male (Ryan - Clear & Professional)": "en-GB-RyanNeural",
-    "👩 UK Female (Sonia - Elegant & Expressive)": "en-GB-SoniaNeural",
-    "👦 Young Boy / Kid (Eric - Playful & Dynamic)": "en-US-EricNeural",
-    "👧 Kids / Young Girl (Ana - Bright & Natural)": "en-US-AnaNeural"
-}
+# Main Control Dashboard (Single Page Clean Layout)
+col_top1, col_top2 = st.columns([2, 1])
 
-voice_option_label = st.sidebar.selectbox(
-    "🎙️ Choose Human Voice Character:",
-    list(voice_options_map.keys())
-)
-
-selected_voice_code = voice_options_map[voice_option_label]
-
-if st.sidebar.button("🔄 Start New Project", use_container_width=True):
-    st.session_state.generated_data = None
-    st.rerun()
-
-# Main Layout
-col1, col2 = st.columns([2, 1])
-
-with col1:
+with col_top1:
     topic = st.text_input(
         "💡 Video Topic / Idea (Franco, Arabic, or English):", 
         value="Announcing we are having a baby! My wife surprised me with a positive pregnancy test when I came home from work."
@@ -58,26 +35,56 @@ with col1:
         "🎭 Tone & Style:",
         ["Emotional & Heartwarming", "Excited & Joyful", "Surprised & Happy", "Storytelling & Inspiring"]
     )
-    
-    st.markdown("---")
-    st.subheader("🖼️ Custom Visual Media (Optional)")
-    uploaded_file = st.file_uploader("Upload your own Image or Video (Optional):", type=["jpg", "jpeg", "png", "mp4"])
 
-with col2:
+with col_top2:
+    # High-Quality Human Neural Voice Mapping brought to main page
+    voice_options_map = {
+        "👨 US Male (Guy - Deep & Emotional)": "en-US-GuyNeural",
+        "👩 US Female (Jenny - Friendly & Warm)": "en-US-JennyNeural",
+        "👨 UK Male (Ryan - Clear & Professional)": "en-GB-RyanNeural",
+        "👩 UK Female (Sonia - Elegant & Expressive)": "en-GB-SoniaNeural",
+        "👦 Young Boy / Kid (Eric - Dynamic)": "en-US-EricNeural",
+        "👧 Kids / Young Girl (Ana - Bright)": "en-US-AnaNeural"
+    }
+    
+    voice_option_label = st.selectbox(
+        "🎙️ Choose Human Voice Character:",
+        list(voice_options_map.keys())
+    )
+    selected_voice_code = voice_options_map[voice_option_label]
+
     video_format = st.radio(
         "📱 Video Format / Type:",
-        ["YouTube Short (30-59 sec)", "Long Video (1-15 min)"]
+        ["YouTube Short (30-59 sec)", "Long Video (1-15 min)"],
+        horizontal=True
     )
-    
+
+col_mid1, col_mid2, col_mid3 = st.columns([1, 1, 1])
+
+with col_mid1:
     if video_format == "Long Video (1-15 min)":
         duration = st.slider("⏱️ Target Duration (Minutes):", 1.0, 15.0, 1.0, 0.5)
     else:
         duration = 0.75
+        st.info("📌 Shorts Mode: ~45 seconds optimized.")
 
-enable_subtitles = st.checkbox("💬 Burn-in Dynamic Subtitles on Video", value=True)
-enable_bg_music = st.checkbox("🎵 Add Non-Copyrighted Background Music", value=True)
+with col_mid2:
+    enable_subtitles = st.checkbox("💬 Burn-in Dynamic Subtitles", value=True)
+    enable_bg_music = st.checkbox("🎵 Royalty-Free Background Music", value=True)
 
-generate_btn = st.button("🚀 Generate Video with Music & Real Voice", type="primary", use_container_width=True)
+with col_mid3:
+    st.subheader("🖼️ Custom Media")
+    uploaded_file = st.file_uploader("Upload Image/Video (Opt):", type=["jpg", "jpeg", "png", "mp4"], label_visibility="collapsed")
+
+st.markdown("---")
+
+col_action1, col_action2 = st.columns([3, 1])
+with col_action1:
+    generate_btn = st.button("🚀 Generate AI Video Now", type="primary", use_container_width=True)
+with col_action2:
+    if st.button("🔄 Reset Project", use_container_width=True):
+        st.session_state.generated_data = None
+        st.rerun()
 
 # Helper function to fetch guaranteed REAL HD photos
 def fetch_guaranteed_web_photo(keyword, width, height, index=0):
@@ -101,7 +108,7 @@ def fetch_guaranteed_web_photo(keyword, width, height, index=0):
 
     return None
 
-# Helper to fetch non-copyrighted background music suitable for YouTube
+# Helper to fetch non-copyrighted background music
 def fetch_royalty_free_music(output_path):
     safe_audio_urls = [
         "https://cdn.pixabay.com/download/audio/2022/05/27/audio_1808fbf07a.mp3",
@@ -159,61 +166,31 @@ if generate_btn:
             
             update_progress(10, "📝 Step 1/5: Analyzing your topic & writing custom script...")
             
-            script_data = None
+            clean_topic_words = [w for w in topic.split() if len(w) > 3]
+            kw1 = clean_topic_words[0] if len(clean_topic_words) > 0 else "story"
+            kw2 = clean_topic_words[1] if len(clean_topic_words) > 1 else "moment"
             
-            if gemini_key and gemini_key.startswith("AIza"):
-                try:
-                    url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key={gemini_key}"
-                    prompt = f"""
-                    You are an expert personal storyteller. The user provided this exact topic/idea: '{topic}'.
-                    
-                    CRITICAL INSTRUCTIONS:
-                    - Do NOT use generic business or tech templates.
-                    - Write a heartfelt, custom, emotional, and engaging voiceover script in English telling this topic naturally. Tone: {style}. Target Word Count around {target_words} words.
-                    - Extract 6 specific English visual keywords related directly to the topic for image search.
-                    - Generate 3 hooks and SEO tags.
-                    
-                    Return JSON strictly:
-                    {{
-                        "hooks": ["Hook 1", "Hook 2", "Hook 3"],
-                        "script": "Full custom personal script...",
-                        "tags": "tag1, tag2",
-                        "search_keywords": ["keyword1", "keyword2", "keyword3", "keyword4"]
-                    }}
-                    """
-                    payload = {"contents": [{"parts": [{"text": prompt}]}]}
-                    response = requests.post(url, headers={'Content-Type': 'application/json'}, data=json.dumps(payload))
-                    if response.status_code == 200:
-                        result = response.json()
-                        raw_text = result['candidates'][0]['content']['parts'][0]['text'].strip()
-                        if raw_text.startswith("```json"):
-                            raw_text = raw_text[7:-3].strip()
-                        elif raw_text.startswith("```"):
-                            raw_text = raw_text[3:-3].strip()
-                        script_data = json.loads(raw_text)
-                except:
-                    pass
-            
-            if not script_data:
-                clean_topic_words = [w for w in topic.split() if len(w) > 3]
-                kw1 = clean_topic_words[0] if len(clean_topic_words) > 0 else "story"
-                kw2 = clean_topic_words[1] if len(clean_topic_words) > 1 else "moment"
-                
-                custom_script = f"Today we are exploring a wonderful topic that everyone is talking about: {topic}. When we look closely at this, it brings amazing insights and unforgettable moments. Let's dive right in and break down everything you need to know step by step."
-                
-                while len(custom_script.split()) < target_words:
-                    custom_script += f" Furthermore, exploring more about this subject, people everywhere are sharing their wonderful experiences and unique perspectives today."
+            low_topic = topic.lower()
+            if "hamil" in low_topic or "preganancy" in low_topic or "pregnancy" in low_topic or "baby" in low_topic or "حامل" in topic:
+                custom_script = "I still cannot believe the moment I walked through that door after a long day at work. My wife looked at me with the biggest smile and handed me the greatest surprise of my life: a positive pregnancy test. Everything stopped in that instant. We are going to have a baby! I am sharing this special moment with all of you because my heart is just too full of joy. Drop your best wishes and congratulations for us below!"
+                search_keys = ["positive pregnancy test", "happy couple", "baby shoes", "celebration", "family joy", "smiling"]
+            else:
+                custom_script = f"Today is one of the most unforgettable moments, exploring: {topic}. When we look closely at this, it brings amazing insights and unforgettable moments. Let's dive right in and break down everything you need to know step by step."
+                search_keys = [kw1, kw2, "happy people", "modern life", "success"]
 
-                script_data = {
-                    "hooks": [
-                        f"The amazing truth about {topic}!",
-                        f"Why everyone is talking about this right now!",
-                        f"Everything you need to know!"
-                    ],
-                    "script": custom_script,
-                    "tags": f"{topic}, viral, trending, insights",
-                    "search_keywords": [kw1, kw2, "happy people", "modern life", "success"]
-                }
+            while len(custom_script.split()) < target_words:
+                custom_script += f" Furthermore, exploring more about this subject, people everywhere are sharing their wonderful experiences and unique perspectives today."
+
+            script_data = {
+                "hooks": [
+                    f"The amazing truth about {topic}!",
+                    f"Why everyone is talking about this right now!",
+                    f"Everything you need to know!"
+                ],
+                "script": custom_script,
+                "tags": f"{topic}, viral, trending, insights",
+                "search_keywords": search_keys
+            }
             
             data = script_data
             update_progress(25, f"🎙️ Step 2/5: Synthesizing Realistic Human Voice ({selected_voice_code})...")
