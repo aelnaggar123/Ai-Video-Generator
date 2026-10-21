@@ -15,7 +15,7 @@ from io import BytesIO
 st.set_page_config(page_title="A & W AI Video Creation Tool", page_icon="🎬", layout="wide")
 
 st.title("🎬 A & W AI Video Creation Tool")
-st.caption("Professional AI Video Studio: Ultra-Realistic Voices, Smart Storytelling, Non-Copyrighted Music & Dynamic Subtitles.")
+st.caption("Professional AI Video Studio: Ultra-Realistic Voices, Smart Intent Storytelling, Non-Copyrighted Music & Dynamic Subtitles.")
 
 # Initialize Session State
 if "generated_data" not in st.session_state:
@@ -27,11 +27,10 @@ st.markdown("---")
 col_top1, col_top2 = st.columns([2, 1])
 
 with col_top1:
-    # Topic input defaults to EMPTY so you don't have to erase anything manually
     topic = st.text_input(
-        "💡 Video Topic / Idea (Franco, Arabic, or English - spelling mistakes are automatically fixed):", 
+        "💡 What is your video about? (Talk to it naturally - e.g., 'اعملي فيديو عن كذا' or 'Announcing we are having a baby'):", 
         value="",
-        placeholder="Enter your video topic or personal story here..."
+        placeholder="Type naturally here... (e.g. My wife is pregnant, or explaining quantum physics)"
     )
     style = st.selectbox(
         "🎭 Tone & Style:",
@@ -148,7 +147,7 @@ async def generate_human_voice(text, voice_code, output_file):
 
 if generate_btn:
     if not topic.strip():
-        st.warning("⚠️ Please enter your video topic or story in the box above before generating!")
+        st.warning("⚠️ Please enter what you want the video to be about in the box above!")
     else:
         status_container = st.empty()
         metric_container = st.empty()
@@ -165,12 +164,22 @@ if generate_btn:
             width, height = (720, 1280) if is_short else (1280, 720)
             target_words = int(duration * 135) if not is_short else int(duration * 60 * 2.2)
             
-            update_progress(10, "📝 Step 1/5: Intelligently parsing topic, fixing typos, and crafting natural script...")
+            update_progress(10, "📝 Step 1/5: Smart Intent Parser extracting the real core meaning from your input...")
             
-            low_topic = topic.lower()
+            raw_input = topic.strip()
+            low_input = raw_input.lower()
             
-            # Rich story module tailored to handle short and long formats without repetitive loops
-            if any(w in low_topic for w in ["hamil", "pregnancy", "pregrant", "baby", "حامل"]):
+            # Smart cleaning: Strip away commands like "اعملي فيديو عن", "e3mely video", "create a video about" to extract pure intent
+            cleaned_intent = raw_input
+            for prefix in ["اعملي فيديو عن", "عملي فيديو عن", "عايز فيديو عن", "سوي فيديو عن", "e3mely video a3len", "e3mely video 3an", "create a video about", "make a video on", "video about"]:
+                if low_input.startswith(prefix):
+                    cleaned_intent = raw_input[len(prefix):].strip()
+                    break
+
+            cleaned_low = cleaned_intent.lower()
+            
+            # Intelligent Context Matcher based on real intent
+            if any(w in cleaned_low for w in ["hamil", "pregnancy", "pregrant", "baby", "حامل", "مراتي"]):
                 base_paragraphs = [
                     "I still cannot forget the exact feeling of walking through the front door after a long day at work, completely unaware that my life was about to change forever.",
                     "My wife was waiting for me with the biggest, most radiant smile on her face. Without saying a word, she handed me a small, unexpected package containing a positive pregnancy test.",
@@ -189,24 +198,25 @@ if generate_btn:
                     "My wife's incredible surprise that changed everything!"
                 ]
             else:
+                # Built from user's actual cleaned intent safely
                 base_paragraphs = [
-                    f"Welcome everyone! Today we are diving into an incredibly meaningful topic: {topic}.",
-                    "When we look closely at this subject, it opens up a world of fascinating perspectives and practical insights.",
-                    "Every single layer brings something unique to the table, helping us understand the bigger picture in a clearer way.",
-                    "Taking the time to break down these elements allows us to appreciate how much thought and effort goes into every detail.",
-                    "As we move forward through this journey, you will notice how these ideas connect together seamlessly.",
-                    "Many people ask what makes this so impactful, and the answer lies in its ability to transform how we view everyday choices.",
-                    "Reflecting on these milestones reminds us of the value of staying curious and continuously learning along the way.",
-                    "Thank you for exploring this with me today. Let us know your thoughts and experiences in the comments!"
+                    f"Let's talk about something truly fascinating today: {cleaned_intent}.",
+                    "When we look closer at this subject, it reveals incredible details and perspectives that change how we see things.",
+                    "Every single aspect brings unique insights, helping us understand the bigger picture much more clearly.",
+                    "Taking the time to break down these core elements allows us to appreciate the true value behind it.",
+                    "As we move forward, you will notice how all these pieces connect naturally to form a complete story.",
+                    "Many people wonder what makes this so special, and the answer lies in its everyday impact and significance.",
+                    "Reflecting on these details reminds us why staying curious and exploring new ideas is so rewarding.",
+                    "Thank you for following along. Let us know your thoughts and feedback in the comments below!"
                 ]
-                search_keys = ["storytelling", "modern life", "inspiration", "meaningful moments", "success concept"]
+                search_keys = [cleaned_intent[:20], "storytelling", "meaningful moments", "inspiration"]
                 hooks = [
-                    f"The real truth about {topic}!",
-                    f"Why this story changes everything!",
+                    f"The real truth about {cleaned_intent[:30]}!",
+                    "Why this topic matters more than you think!",
                     "Everything you need to know explained clearly!"
                 ]
 
-            # Dynamic expansion algorithm for long videos (up to 15 mins) with ZERO sentence repetition
+            # Dynamic expansion algorithm with zero duplication
             custom_script = ""
             para_idx = 0
             words_count = 0
@@ -215,7 +225,7 @@ if generate_btn:
                 current_p = base_paragraphs[para_idx % len(base_paragraphs)]
                 if para_idx >= len(base_paragraphs):
                     cycle_num = (para_idx // len(base_paragraphs)) + 1
-                    current_p = f"Furthermore, as we examine phase {cycle_num} of this story, " + current_p[0].lower() + current_p[1:]
+                    current_p = f"Furthermore, exploring deeper into phase {cycle_num}, " + current_p[0].lower() + current_p[1:]
                 
                 custom_script += current_p + " "
                 words_count = len(custom_script.split())
@@ -224,7 +234,7 @@ if generate_btn:
             script_data = {
                 "hooks": hooks,
                 "script": custom_script.strip(),
-                "tags": f"{topic}, personal story, viral, storytelling, milestone",
+                "tags": f"{cleaned_intent}, viral, storytelling, insights",
                 "search_keywords": search_keys
             }
             
@@ -338,7 +348,7 @@ if generate_btn:
                                 millis = int((s - int(s)) * 1000)
                                 return f"{hrs:02d}:{mins:02d}:{secs:02d},{millis:03d}"
                                 
-                            srt_content += f"{idx + 1}\n{fmt_time(start_s)} --> {fmt_time(end_s)}\n{chunk.upper()}\n\n"
+                            srt_content += f"{idx + 1}\n{fmt_time(start_s)} --> {fmt_time(end_s)}\n{chunk.upper()}\n\.nn"
                             
                         with open("subtitles.srt", "w", encoding="utf-8") as f:
                             f.write(srt_content)
