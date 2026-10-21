@@ -8,6 +8,7 @@ import time
 import asyncio
 import edge_tts
 import numpy as np
+import re
 from PIL import Image
 from io import BytesIO
 
@@ -23,14 +24,14 @@ if "generated_data" not in st.session_state:
 
 st.markdown("---")
 
-# Main Control Dashboard (Single Page Clean Layout)
+# Main Control Dashboard
 col_top1, col_top2 = st.columns([2, 1])
 
 with col_top1:
     topic = st.text_input(
         "💡 What is your video about?", 
         value="",
-        placeholder="Type naturally here... (e.g. My wife is pregnant, or explaining quantum physics)"
+        placeholder="Type naturally in Franco, Arabic, or English..."
     )
     style = st.selectbox(
         "🎭 Tone & Style:",
@@ -86,6 +87,80 @@ with col_action2:
         st.session_state.generated_data = None
         st.rerun()
 
+# Advanced Franco & Arabic Intent Processor
+def process_user_intent(raw_text):
+    text = raw_text.strip()
+    low = text.lower()
+
+    # Strip conversational prefixes (Arabic / Franco / English)
+    prefixes = [
+        r"^e3mel(y)?\s+video\s+(a3len\s+beh\s+|3an\s+)?",
+        r"^e3mly\s+video\s+",
+        r"^3ayez\s+video\s+(3an\s+)?",
+        r"^3ayz\s+video\s+",
+        r"^اعمل(ي)?\s+فيديو\s+(عن\s+|اعلن\s+بيه\s+)?",
+        r"^عايز\s+فيديو\s+(عن\s+)?",
+        r"^make\s+a\s+video\s+(about\s+|on\s+)?",
+        r"^create\s+a\s+video\s+(about\s+|on\s+)?"
+    ]
+    
+    cleaned = text
+    for p in prefixes:
+        cleaned = re.sub(p, "", cleaned, flags=re.IGNORECASE).strip()
+    
+    cleaned_low = cleaned.lower()
+
+    # Context Mapping: Detecting core subject matter
+    is_pregnancy = any(kw in cleaned_low for w in ["hamil", "7amel", "pregnancy", "pregrant", "baby", "حامل", "مراتي", "mraty", "test"] for kw in [w])
+    is_tech = any(kw in cleaned_low for w in ["tech", "ai", "coding", "software", "تكنولوجيا", "برمجة"] for kw in [w])
+    is_educational = any(kw in cleaned_low for w in ["learn", "explain", "how to", "شرح", "تعلم"] for kw in [w])
+
+    if is_pregnancy:
+        concept_english = "pregnancy announcement surprise"
+        base_paragraphs = [
+            "I still cannot forget the exact feeling of walking through the front door after a long day at work, completely unaware that my life was about to change forever.",
+            "My wife was waiting for me with the biggest, most radiant smile on her face. Without saying a word, she handed me a small, unexpected package containing a positive pregnancy test.",
+            "After months of waiting, hoping, and dreaming about this exact moment, she was finally pregnant! Time seemed to freeze right there in the hallway.",
+            "All the tiredness from work vanished instantly, replaced by pure, overwhelming joy and tears of happiness. We are going to be parents!",
+            "I wanted to capture and share this milestone with all of you because some moments in life are just too precious to keep to yourself.",
+            "Looking ahead to this journey, we know there will be late nights, endless learning, and brand new challenges, but we could not be more ready.",
+            "Every doctor visit, every baby milestone, and every step forward will be a testament to love, patience, and family.",
+            "To everyone who has supported us and shared their positive energy, thank you from the bottom of our hearts.",
+            "If you are watching this, drop your warmest congratulations and best wishes for our growing family below!"
+        ]
+        search_keys = ["positive pregnancy test", "happy couple", "baby shoes", "celebration", "family joy"]
+        hooks = [
+            "The most life-changing surprise when coming home from work!",
+            "After months of waiting, this happened!",
+            "My wife's incredible surprise that changed everything!"
+        ]
+        seo_tags = "pregnancy announcement, baby surprise, having a baby, family milestone, positive pregnancy test, emotional reaction, parent to be, viral story, baby news, blessed"
+    else:
+        # Convert Franco tokens to clean English search topics automatically
+        clean_tokens = [w for w in re.findall(r'\b[a-zA-Z]{3,}\b', cleaned) if w.lower() not in ["video", "e3mely", "a3len", "3ayez", "beh", "hya", "kanet", "lma", "rge3t"]]
+        topic_subject = " ".join(clean_tokens[:3]) if clean_tokens else "an inspiring story"
+        concept_english = topic_subject
+
+        base_paragraphs = [
+            f"Let's talk about something truly fascinating today: {topic_subject}.",
+            "When we look closer at this subject, it reveals incredible details and perspectives that change how we see things.",
+            "Every single aspect brings unique insights, helping us understand the bigger picture much more clearly.",
+            "Taking the time to break down these core elements allows us to appreciate the true value behind it.",
+            "As we move forward, you will notice how all these pieces connect naturally to form a complete story.",
+            "Many people wonder what makes this so special, and the answer lies in its everyday impact and significance.",
+            "Reflecting on these details reminds us why staying curious and exploring new ideas is so rewarding.",
+            "Thank you for following along. Let us know your thoughts and feedback in the comments below!"
+        ]
+        search_keys = [topic_subject, "storytelling", "meaningful moments", "inspiration"]
+        hooks = [
+            f"The real truth about {topic_subject}!",
+            "Why this topic matters more than you think!",
+            "Everything you need to know explained clearly!"
+        ]
+        seo_tags = f"{topic_subject}, viral video, storytelling, trending topic, deep dive, informative, top insights, Youtube Shorts, compelling story"
+
+    return concept_english, base_paragraphs, search_keys, hooks, seo_tags
+
 # Helper function to fetch guaranteed REAL HD photos
 def fetch_guaranteed_web_photo(keyword, width, height, index=0):
     clean_kw = keyword.strip().replace(" ", ",").lower()
@@ -126,19 +201,6 @@ def fetch_royalty_free_music(output_path):
             continue
     return False
 
-# Helper to generate proper SEO tags instead of raw copy-pasted phrases
-def generate_smart_seo_tags(cleaned_intent, is_pregnancy_topic=False):
-    if is_pregnancy_topic:
-        return "pregnancy announcement, baby surprise, having a baby, family milestone, positive pregnancy test, emotional reaction, parent to be, viral story, baby news, blessed, life changing moment"
-    
-    # Extract key English words from intent and format properly for YouTube
-    words = [w.strip() for w in cleaned_intent.replace(",", " ").split() if len(w) > 2]
-    clean_words = [w for w in words if w.lower() not in ["e3mely", "video", "a3len", "about", "make", "create", "this", "that", "with"]]
-    
-    main_kw = " ".join(clean_words[:4]) if clean_words else "trending topic"
-    
-    return f"{main_kw}, viral video, storytelling, trending topic, deep dive, informative, top insights, Youtube Shorts, educational, compelling story"
-
 # Helper to split text into short readable subtitle chunks
 def split_script_into_chunks(script_text, max_words=4):
     words = script_text.split()
@@ -177,55 +239,9 @@ if generate_btn:
             width, height = (720, 1280) if is_short else (1280, 720)
             target_words = int(duration * 135) if not is_short else int(duration * 60 * 2.2)
             
-            update_progress(10, "📝 Step 1/5: Smart Intent Parser extracting the real core meaning & generating SEO tags...")
+            update_progress(10, "📝 Step 1/5: Translating Franco/Arabic intent & crafting natural English script...")
             
-            raw_input = topic.strip()
-            low_input = raw_input.lower()
-            
-            cleaned_intent = raw_input
-            for prefix in ["اعملي فيديو عن", "عملي فيديو عن", "عايز فيديو عن", "سوي فيديو عن", "e3mely video a3len", "e3mely video 3an", "create a video about", "make a video on", "video about"]:
-                if low_input.startswith(prefix):
-                    cleaned_intent = raw_input[len(prefix):].strip()
-                    break
-
-            cleaned_low = cleaned_intent.lower()
-            is_pregnancy = any(w in cleaned_low for w in ["hamil", "pregnancy", "pregrant", "baby", "حامل", "مراتي"])
-            
-            if is_pregnancy:
-                base_paragraphs = [
-                    "I still cannot forget the exact feeling of walking through the front door after a long day at work, completely unaware that my life was about to change forever.",
-                    "My wife was waiting for me with the biggest, most radiant smile on her face. Without saying a word, she handed me a small, unexpected package containing a positive pregnancy test.",
-                    "After months of waiting, hoping, and dreaming about this exact moment, she was finally pregnant! Time seemed to freeze right there in the hallway.",
-                    "All the tiredness from work vanished instantly, replaced by pure, overwhelming joy and tears of happiness. We are going to be parents!",
-                    "I wanted to capture and share this milestone with all of you because some moments in life are just too precious to keep to yourself.",
-                    "Looking ahead to this journey, we know there will be late nights, endless learning, and brand new challenges, but we could not be more ready.",
-                    "Every doctor visit, every baby milestone, and every step forward will be a testament to love, patience, and family.",
-                    "To everyone who has supported us and shared their positive energy, thank you from the bottom of our hearts.",
-                    "If you are watching this, drop your warmest congratulations and best wishes for our growing family below!"
-                ]
-                search_keys = ["positive pregnancy test", "happy couple", "baby shoes", "celebration", "family joy", "smiling parents"]
-                hooks = [
-                    "The most life-changing surprise when coming home from work!",
-                    "After months of waiting, this happened!",
-                    "My wife's incredible surprise that changed everything!"
-                ]
-            else:
-                base_paragraphs = [
-                    f"Let's talk about something truly fascinating today: {cleaned_intent}.",
-                    "When we look closer at this subject, it reveals incredible details and perspectives that change how we see things.",
-                    "Every single aspect brings unique insights, helping us understand the bigger picture much more clearly.",
-                    "Taking the time to break down these core elements allows us to appreciate the true value behind it.",
-                    "As we move forward, you will notice how all these pieces connect naturally to form a complete story.",
-                    "Many people wonder what makes this so special, and the answer lies in its everyday impact and significance.",
-                    "Reflecting on these details reminds us why staying curious and exploring new ideas is so rewarding.",
-                    "Thank you for following along. Let us know your thoughts and feedback in the comments below!"
-                ]
-                search_keys = [cleaned_intent[:20], "storytelling", "meaningful moments", "inspiration"]
-                hooks = [
-                    f"The real truth about {cleaned_intent[:30]}!",
-                    "Why this topic matters more than you think!",
-                    "Everything you need to know explained clearly!"
-                ]
+            concept, base_paragraphs, search_keys, hooks, seo_tags = process_user_intent(topic)
 
             custom_script = ""
             para_idx = 0
@@ -240,8 +256,6 @@ if generate_btn:
                 custom_script += current_p + " "
                 words_count = len(custom_script.split())
                 para_idx += 1
-
-            seo_tags = generate_smart_seo_tags(cleaned_intent, is_pregnancy_topic=is_pregnancy)
 
             script_data = {
                 "hooks": hooks,
