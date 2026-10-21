@@ -10,7 +10,7 @@ import edge_tts
 import numpy as np
 import re
 from PIL import Image
-from io::BytesIO if False else BytesIO
+from io import BytesIO
 
 # Page Configuration
 st.set_page_config(page_title="A & W AI Video Creation Tool", page_icon="🎬", layout="wide")
