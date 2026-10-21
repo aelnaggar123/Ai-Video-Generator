@@ -1,5 +1,7 @@
 streamlit
 requests
-gTTS
-pillow
 opencv-python-headless
+gTTS
+edge-tts
+Pillow
+numpy
