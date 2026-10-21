@@ -15,27 +15,24 @@ from io import BytesIO
 st.set_page_config(page_title="A & W AI Video Creation Tool", page_icon="🎬", layout="wide")
 
 st.title("🎬 A & W AI Video Creation Tool")
-st.caption("Ultra-Realistic Human Neural Voices, Real HD Visuals, Subtitles & Smooth Motion.")
+st.caption("Ultra-Realistic Human Neural Voices, Topic Visuals, Non-Copyrighted Music, Subtitles & Smooth Motion.")
 
 # Initialize Session State
 if "generated_data" not in st.session_state:
     st.session_state.generated_data = None
 
 # Sidebar Configuration
-st.sidebar.header("⚙️ Settings & Realistic Human Voices")
+st.sidebar.header("⚙️ Settings & Voices")
 gemini_key = st.sidebar.text_input("Gemini API Key (Optional / AIza...)", value="", type="password")
 
 # High-Quality Human Neural Voice Mapping (Microsoft Edge Neural Engine)
 voice_options_map = {
-    "👧 Kids / Young Girl (Ana - Bright & Natural)": "en-US-AnaNeural",
-    "👦 Young Boy / Kid (Eric - Playful & Dynamic)": "en-US-EricNeural",
-    "👧 Young Girl / Storyteller (Maisie - Soft & Warm)": "en-GB-MaisieNeural",
-    "👩 US Female (Jenny - Friendly & Energetic)": "en-US-JennyNeural",
-    "👨 US Male (Guy - Deep & Natural Narration)": "en-US-GuyNeural",
-    "👩 UK Female (Sonia - Elegant & Expressive)": "en-GB-SoniaNeural",
+    "👨 US Male (Guy - Deep & Emotional Narration)": "en-US-GuyNeural",
+    "👩 US Female (Jenny - Friendly & Warm)": "en-US-JennyNeural",
     "👨 UK Male (Ryan - Clear & Professional)": "en-GB-RyanNeural",
-    "👨 Australian Male (William - Casual & Warm)": "en-AU-WilliamNeural",
-    "👩 Canadian Female (Clara - Smooth & Clear)": "en-CA-ClaraNeural"
+    "👩 UK Female (Sonia - Elegant & Expressive)": "en-GB-SoniaNeural",
+    "👦 Young Boy / Kid (Eric - Playful & Dynamic)": "en-US-EricNeural",
+    "👧 Kids / Young Girl (Ana - Bright & Natural)": "en-US-AnaNeural"
 }
 
 voice_option_label = st.sidebar.selectbox(
@@ -53,10 +50,13 @@ if st.sidebar.button("🔄 Start New Project", use_container_width=True):
 col1, col2 = st.columns([2, 1])
 
 with col1:
-    topic = st.text_input("💡 Video Topic / Idea (Franco, Arabic, or English):", value="Kids educational video teaching ABCD letters in a fun and fast way")
+    topic = st.text_input(
+        "💡 Video Topic / Idea (Franco, Arabic, or English):", 
+        value="Announcing we are having a baby! My wife surprised me with a positive pregnancy test when I came home from work."
+    )
     style = st.selectbox(
         "🎭 Tone & Style:",
-        ["Fast-Paced & Energetic", "Engaging & Dramatic", "Educational & Simple", "Storytelling & Inspiring"]
+        ["Emotional & Heartwarming", "Excited & Joyful", "Surprised & Happy", "Storytelling & Inspiring"]
     )
     
     st.markdown("---")
@@ -75,8 +75,9 @@ with col2:
         duration = 0.75
 
 enable_subtitles = st.checkbox("💬 Burn-in Dynamic Subtitles on Video", value=True)
+enable_bg_music = st.checkbox("🎵 Add Non-Copyrighted Background Music", value=True)
 
-generate_btn = st.button("🚀 Generate Video with Realistic Human Voice", type="primary", use_container_width=True)
+generate_btn = st.button("🚀 Generate Video with Music & Real Voice", type="primary", use_container_width=True)
 
 # Helper function to fetch guaranteed REAL HD photos
 def fetch_guaranteed_web_photo(keyword, width, height, index=0):
@@ -99,6 +100,25 @@ def fetch_guaranteed_web_photo(keyword, width, height, index=0):
         pass
 
     return None
+
+# Helper to fetch non-copyrighted background music suitable for YouTube
+def fetch_royalty_free_music(output_path):
+    # Public domain / CC0 safe ambient & emotional background audio streams
+    safe_audio_urls = [
+        "https://cdn.pixabay.com/download/audio/2022/05/27/audio_1808fbf07a.mp3",
+        "https://cdn.pixabay.com/download/audio/2022/03/15/audio_c8c8a73467.mp3",
+        "https://cdn.pixabay.com/download/audio/2022/01/18/audio_d0a13f69d2.mp3"
+    ]
+    for music_url in safe_audio_urls:
+        try:
+            res = requests.get(music_url, timeout=10)
+            if res.status_code == 200 and len(res.content) > 50000:
+                with open(output_path, "wb") as f:
+                    f.write(res.content)
+                return True
+        except:
+            continue
+    return False
 
 # Helper to split text into short readable subtitle chunks
 def split_script_into_chunks(script_text, max_words=4):
@@ -138,7 +158,7 @@ if generate_btn:
             width, height = (720, 1280) if is_short else (1280, 720)
             target_words = int(duration * 135) if not is_short else int(duration * 60 * 2.2)
             
-            update_progress(10, "📝 Step 1/4: Generating professional script & analyzing keywords...")
+            update_progress(10, "📝 Step 1/5: Analyzing your exact story & writing custom script...")
             
             script_data = None
             
@@ -146,13 +166,18 @@ if generate_btn:
                 try:
                     url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key={gemini_key}"
                     prompt = f"""
-                    Create a custom, engaging voiceover script in English about this topic: '{topic}'. 
-                    Tone: {style}. Target Word Count around {target_words} words.
-                    Also extract 6 English visual keywords for image search, 3 viral hooks, and SEO tags.
+                    You are an expert personal storyteller. The user provided this exact personal story/idea: '{topic}'.
+                    
+                    CRITICAL INSTRUCTIONS:
+                    - Do NOT use generic business or tech templates.
+                    - Write a heartfelt, custom, emotional, and engaging voiceover script in English telling this exact story naturally. Tone: {style}. Target Word Count around {target_words} words.
+                    - Extract 6 specific English visual keywords related directly to the story for image search (e.g., 'happy couple', 'pregnancy test', 'baby shoes', 'celebration', 'family joy').
+                    - Generate 3 emotional/viral hooks and SEO tags.
+                    
                     Return JSON strictly:
                     {{
                         "hooks": ["Hook 1", "Hook 2", "Hook 3"],
-                        "script": "Full script...",
+                        "script": "Full custom personal script...",
                         "tags": "tag1, tag2",
                         "search_keywords": ["keyword1", "keyword2", "keyword3", "keyword4"]
                     }}
@@ -170,31 +195,34 @@ if generate_btn:
                 except:
                     pass
             
+            # Smart Custom Fallback tailored specifically to personal announcements / pregnancy
             if not script_data:
-                clean_topic_words = [w for w in topic.split() if len(w) > 3]
-                kw1 = clean_topic_words[0] if len(clean_topic_words) > 0 else "children"
-                kw2 = clean_topic_words[1] if len(clean_topic_words) > 1 else "learning"
-                
-                custom_script = f"Hello everyone! Today we are exploring an incredible topic that is capturing so much attention: {topic}. When we take a closer look, it brings amazing insights and practical ideas. Let's dive right in and break down everything you need to know step by step."
-                
+                low_topic = topic.lower()
+                if "hamil" in low_topic or "preganancy" in low_topic or "pregnancy" in low_topic or "baby" in low_topic or "حامل" in topic:
+                    custom_script = "I still cannot believe the moment I walked through that door after a long day at work. My wife looked at me with the biggest smile and handed me the greatest surprise of my life: a positive pregnancy test. Everything stopped in that instant. We are going to have a baby! I am sharing this special moment with all of you because my heart is just too full of joy. Drop your best wishes and congratulations for us below!"
+                    search_keys = ["positive pregnancy test", "happy couple", "baby shoes", "celebration", "family joy", "smiling"]
+                else:
+                    custom_script = f"Today is one of the most unforgettable moments of my life, and I wanted to share it with all of you. {topic}. When this happened, it changed everything and brought so much happiness. Thank you for always celebrating these precious moments with us!"
+                    search_keys = ["happy family", "celebration", "joyful moments", "smiling people", "surprised"]
+
                 while len(custom_script.split()) < target_words:
-                    custom_script += f" Furthermore, exploring more about {topic}, people everywhere are sharing their wonderful experiences and unique perspectives today."
+                    custom_script += " This is a moment we will cherish forever, and looking ahead, our lives will never be the same in the most wonderful way possible."
 
                 script_data = {
                     "hooks": [
-                        f"The amazing truth about {topic}!",
-                        f"Why everyone is loving {topic} right now!",
-                        f"Everything you need to know about {topic}!"
+                        "The best surprise I ever received when coming home from work!",
+                        "My wife's life-changing surprise revealed!",
+                        "We have the most amazing news to share!"
                     ],
                     "script": custom_script,
-                    "tags": f"{topic}, viral, kids, learning, trending",
-                    "search_keywords": [kw1, kw2, "kids learning", "happy people", "children smiling", "colorful"]
+                    "tags": "pregnancy announcement, baby news, family joy, blessed, milestone",
+                    "search_keywords": search_keys
                 }
             
             data = script_data
-            update_progress(30, f"🎙️ Step 2/4: Synthesizing Realistic Human Voice ({selected_voice_code})...")
+            update_progress(25, f"🎙️ Step 2/5: Synthesizing Realistic Human Voice ({selected_voice_code})...")
 
-            # Step 2: Realistic Human Voiceover Generation using Edge-TTS
+            # Step 2: Realistic Human Voiceover Generation
             audio_raw = "raw_human_voice.mp3"
             audio_final = "final_voice.mp3"
             
@@ -206,13 +234,14 @@ if generate_btn:
             probe_cmd = f"ffprobe -v error -show_entries format=duration -of default=noprint_wrappers=1:nokey=1 {audio_final}"
             final_audio_dur = float(subprocess.check_output(probe_cmd, shell=True).decode('utf-8').strip())
             
-            update_progress(50, "🌐 Step 3/4: Downloading real HD photos matching topic...")
+            update_progress(45, "🌐 Step 3/5: Downloading real HD photos matching your story...")
 
             # Step 3: Fetch Real HD Photos
             fps = 24
             total_frames = int(fps * final_audio_dur)
             video_no_audio = "temp_video.mp4"
             video_with_subtitles = "temp_subtitles.mp4"
+            audio_combined = "combined_audio.mp3"
             final_mp4 = "final_generated_video.mp4"
             
             custom_video_used = False
@@ -230,7 +259,7 @@ if generate_btn:
                     custom_video_used = True
 
             if not custom_video_used:
-                keywords = data.get("search_keywords", ["children", "learning"])
+                keywords = data.get("search_keywords", ["happy couple", "celebration"])
                 for idx, kw in enumerate(keywords):
                     img = fetch_guaranteed_web_photo(kw, width, height, index=idx)
                     if img:
@@ -238,119 +267,30 @@ if generate_btn:
                         
             if not custom_video_used and len(scene_images) == 0:
                 for idx in range(6):
-                    img = fetch_guaranteed_web_photo("children", width, height, index=idx)
+                    img = fetch_guaranteed_web_photo("happy couple", width, height, index=idx)
                     if img:
                         scene_images.append(img)
 
-            # Step 4: Render Motion Video & Burn Subtitles
-            update_progress(70, "🎥 Step 4/4: Rendering motion video & burning subtitles...")
+            update_progress(65, "🎵 Step 4/5: Mixing royalty-free background music...")
+            
+            # Step 4: Mix Voiceover with Non-Copyrighted Music
+            voice_to_use = audio_final
+            if enable_bg_music:
+                bg_music_file = "bg_music.mp3"
+                if fetch_royalty_free_music(bg_music_file):
+                    # Mix voiceover with background music (music volume set to 15% to keep speech clear)
+                    cmd_mix = f"ffmpeg -y -i {audio_final} -stream_loop -1 -i {bg_music_file} -filter_complex \"[1:a]volume=0.15[bg];[0:a][bg]amix=inputs=2:duration=first[a]\" -map \"[a]\" {audio_combined}"
+                    try:
+                        subprocess.run(cmd_mix, shell=True, check=True)
+                        voice_to_use = audio_combined
+                    except:
+                        voice_to_use = audio_final
+
+            # Step 5: Render Motion Video & Burn Subtitles
+            update_progress(80, "🎥 Step 5/5: Rendering motion video & burning subtitles...")
             
             if not custom_video_used and len(scene_images) > 0:
                 fourcc = cv2.VideoWriter_fourcc(*'mp4v')
                 out = cv2.VideoWriter(video_no_audio, fourcc, fps, (width, height))
                 
-                frames_per_scene = max(1, total_frames // len(scene_images))
-
-                for frame_num in range(total_frames):
-                    scene_idx = min(frame_num // frames_per_scene, len(scene_images) - 1)
-                    scene_frame_offset = frame_num % frames_per_scene
-                    
-                    base_img = np.array(scene_images[scene_idx].resize((width + 100, height + 100), Image.Resampling.LANCZOS))
-                    
-                    progress_in_scene = scene_frame_offset / float(frames_per_scene)
-                    shift_x = int(progress_in_scene * 80)
-                    shift_y = int(progress_in_scene * 40)
-                    
-                    cropped_frame = base_img[shift_y:shift_y + height, shift_x:shift_x + width]
-                    cv_bgr_frame = cv2.cvtColor(cropped_frame, cv2.COLOR_RGB2BGR)
-                    
-                    out.write(cv_bgr_frame)
-                    
-                    if frame_num % 100 == 0:
-                        inner_p = 70 + int((frame_num / total_frames) * 20)
-                        progress_bar.progress(inner_p)
-
-                out.release()
-
-                video_to_merge = video_no_audio
-                if enable_subtitles:
-                    try:
-                        chunks = split_script_into_chunks(data['script'], max_words=4)
-                        srt_content = ""
-                        time_per_chunk = final_audio_dur / float(len(chunks))
-                        
-                        for idx, chunk in enumerate(chunks):
-                            start_s = idx * time_per_chunk
-                            end_s = (idx + 1) * time_per_chunk
-                            
-                            def fmt_time(s):
-                                hrs = int(s // 3600)
-                                mins = int((s % 3600) // 60)
-                                secs = int(s % 60)
-                                millis = int((s - int(s)) * 1000)
-                                return f"{hrs:02d}:{mins:02d}:{secs:02d},{millis:03d}"
-                                
-                            srt_content += f"{idx + 1}\n{fmt_time(start_s)} --> {fmt_time(end_s)}\n{chunk.upper()}\n\n"
-                            
-                        with open("subtitles.srt", "w", encoding="utf-8") as f:
-                            f.write(srt_content)
-                            
-                        font_size = 22 if is_short else 28
-                        subtitle_filter = f"subtitles=subtitles.srt:force_style='FontSize={font_size},PrimaryColour=&H00FFFFFF,OutlineColour=&H00000000,BackColour=&H80000000,BorderStyle=4,Alignment=2,MarginV=60'"
-                        
-                        cmd_srt = f"ffmpeg -y -i {video_no_audio} -vf \"{subtitle_filter}\" -c:v libx264 {video_with_subtitles}"
-                        subprocess.run(cmd_srt, shell=True, check=True)
-                        video_to_merge = video_with_subtitles
-                    except:
-                        pass
-
-                cmd_merge = f"ffmpeg -y -i {video_to_merge} -i {audio_final} -c:v libx264 -pix_fmt yuv420p -c:a aac -shortest {final_mp4}"
-                subprocess.run(cmd_merge, shell=True, check=True)
-
-            update_progress(100, "🎉 Production Complete Successfully!")
-            elapsed_time = time.time() - start_time
-            
-            st.session_state.generated_data = {
-                "hooks": data['hooks'],
-                "script": data['script'],
-                "tags": data['tags'],
-                "video_path": final_mp4,
-                "is_short": is_short,
-                "topic": topic,
-                "duration": final_audio_dur
-            }
-
-        except Exception as e:
-            st.error(f"An error occurred: {e}")
-
-if st.session_state.generated_data:
-    res = st.session_state.generated_data
-    st.markdown("---")
-    
-    col_left, col_right = st.columns([1, 1])
-    
-    with col_left:
-        st.subheader(f"📺 Final Video Output ({res['duration']:.1f}s)")
-        st.video(res["video_path"])
-        
-        file_label = "Shorts_MP4" if res["is_short"] else "Video_MP4"
-        with open(res["video_path"], "rb") as f:
-            st.download_button(
-                label=f"⬇️ Download {file_label}",
-                data=f,
-                file_name=f"AI_{file_label}_{res['topic'][:10].replace(' ', '_')}.mp4",
-                mime="video/mp4",
-                use_container_width=True
-            )
-            
-    with col_right:
-        st.subheader("🎯 High-CTR Short Viral Hooks")
-        for idx, hook in enumerate(res["hooks"], 1):
-            st.info(f"**Hook {idx}:** {hook}")
-            
-        st.subheader("📌 Highly Related SEO Tags & Keywords")
-        st.code(res["tags"], language="text")
-
-    st.markdown("---")
-    st.subheader("🎙️ Generated Voiceover Script")
-    st.text_area("Copy Script Text:", res["script"], height=180)
+                frames_per_scene = max(
