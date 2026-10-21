@@ -15,7 +15,7 @@ from io import BytesIO
 st.set_page_config(page_title="A & W AI Video Creation Tool", page_icon="🎬", layout="wide")
 
 st.title("🎬 A & W AI Video Creation Tool")
-st.caption("Professional AI Video Studio: Made by Eng. Ahmed El Naggar | Ultra-Realistic Voices, Smart Intent Storytelling & Non-Copyrighted Music.")
+st.caption("Professional AI Video Studio: Made by Eng. Ahmed El Naggar and his Sem Sem ❤️ | Ultra-Realistic Voices, Smart Intent Storytelling & Non-Copyrighted Music.")
 
 # Initialize Session State
 if "generated_data" not in st.session_state:
@@ -126,6 +126,19 @@ def fetch_royalty_free_music(output_path):
             continue
     return False
 
+# Helper to generate proper SEO tags instead of raw copy-pasted phrases
+def generate_smart_seo_tags(cleaned_intent, is_pregnancy_topic=False):
+    if is_pregnancy_topic:
+        return "pregnancy announcement, baby surprise, having a baby, family milestone, positive pregnancy test, emotional reaction, parent to be, viral story, baby news, blessed, life changing moment"
+    
+    # Extract key English words from intent and format properly for YouTube
+    words = [w.strip() for w in cleaned_intent.replace(",", " ").split() if len(w) > 2]
+    clean_words = [w for w in words if w.lower() not in ["e3mely", "video", "a3len", "about", "make", "create", "this", "that", "with"]]
+    
+    main_kw = " ".join(clean_words[:4]) if clean_words else "trending topic"
+    
+    return f"{main_kw}, viral video, storytelling, trending topic, deep dive, informative, top insights, Youtube Shorts, educational, compelling story"
+
 # Helper to split text into short readable subtitle chunks
 def split_script_into_chunks(script_text, max_words=4):
     words = script_text.split()
@@ -164,7 +177,7 @@ if generate_btn:
             width, height = (720, 1280) if is_short else (1280, 720)
             target_words = int(duration * 135) if not is_short else int(duration * 60 * 2.2)
             
-            update_progress(10, "📝 Step 1/5: Smart Intent Parser extracting the real core meaning from your input...")
+            update_progress(10, "📝 Step 1/5: Smart Intent Parser extracting the real core meaning & generating SEO tags...")
             
             raw_input = topic.strip()
             low_input = raw_input.lower()
@@ -176,8 +189,9 @@ if generate_btn:
                     break
 
             cleaned_low = cleaned_intent.lower()
+            is_pregnancy = any(w in cleaned_low for w in ["hamil", "pregnancy", "pregrant", "baby", "حامل", "مراتي"])
             
-            if any(w in cleaned_low for w in ["hamil", "pregnancy", "pregrant", "baby", "حامل", "مراتي"]):
+            if is_pregnancy:
                 base_paragraphs = [
                     "I still cannot forget the exact feeling of walking through the front door after a long day at work, completely unaware that my life was about to change forever.",
                     "My wife was waiting for me with the biggest, most radiant smile on her face. Without saying a word, she handed me a small, unexpected package containing a positive pregnancy test.",
@@ -227,10 +241,12 @@ if generate_btn:
                 words_count = len(custom_script.split())
                 para_idx += 1
 
+            seo_tags = generate_smart_seo_tags(cleaned_intent, is_pregnancy_topic=is_pregnancy)
+
             script_data = {
                 "hooks": hooks,
                 "script": custom_script.strip(),
-                "tags": f"{cleaned_intent}, viral, storytelling, insights",
+                "tags": seo_tags,
                 "search_keywords": search_keys
             }
             
