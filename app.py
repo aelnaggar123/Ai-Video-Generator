@@ -16,7 +16,7 @@ from io import BytesIO
 st.set_page_config(page_title="A & W AI Video Creation Tool", page_icon="🎬", layout="wide")
 
 st.title("🎬 A & W AI Video Creation Tool")
-st.caption("Professional AI Video Studio: Made by Eng. Ahmed El Naggar and his Sem Sem ❤️ | Ultra-Realistic Voices, Smart Intent Storytelling & Non-Copyrighted Music.")
+st.caption("Professional AI Video Studio: Made by Eng. Ahmed El Naggar and his Sem Sem ❤️ | True AI Intent Understanding & Ultra-Realistic Voices.")
 
 # Initialize Session State
 if "generated_data" not in st.session_state:
@@ -31,11 +31,11 @@ with col_top1:
     topic = st.text_input(
         "💡 What is your video about?", 
         value="",
-        placeholder="Type naturally in Franco, Arabic, or English..."
+        placeholder="Type naturally in Franco, Arabic, or English (e.g. tare2et 3amal el burger, quantum physics, etc.)..."
     )
     style = st.selectbox(
         "🎭 Tone & Style:",
-        ["Emotional & Heartwarming", "Excited & Joyful", "Surprised & Happy", "Storytelling & Inspiring", "Informative & Casual"]
+        ["Informative & Engaging", "Emotional & Heartwarming", "Excited & Joyful", "Surprised & Happy", "Storytelling & Inspiring"]
     )
 
 with col_top2:
@@ -87,73 +87,54 @@ with col_action2:
         st.session_state.generated_data = None
         st.rerun()
 
-# Ultra-Smart Franco, Typo, and Recipe Intent Processor
-def process_user_intent_deep(raw_text):
-    text = raw_text.strip().lower()
+# REAL Dynamic AI Generator using Free Open AI Endpoint Engine
+def generate_ai_dynamic_content(user_prompt, target_word_count, tone_style):
+    system_instruction = (
+        "You are an expert video script writer and content strategist. "
+        "The user will give you a topic in Franco-Arabic, Arabic, or English (which may contain typos or numbers like 3, 7, 2). "
+        "Your task: "
+        "1. Understand the core meaning and intent of the topic accurately regardless of language/typos. "
+        "2. Write a highly accurate, natural, engaging English video script matching the intent (whether it's a cooking recipe, personal story, tech explanation, or tutorial). "
+        "3. Provide exactly 3 viral hooks for YouTube/TikTok. "
+        "4. Provide 5 specific, highly relevant visual search keywords in English for image fetching (e.g. for egg cheese burger: 'juicy burger patty', 'fried egg on burger', 'melted cheddar cheese', 'burger buns', 'cooking burger'). "
+        "5. Provide 10 highly relevant SEO tags. "
+        f"Generate a script of approximately {target_word_count} words in a {tone_style} tone."
+    )
     
-    # Check for Pregnancy / Personal Milestone Intent
-    if any(kw in text for kw in ["hamil", "7amel", "pregnancy", "pregrant", "baby", "حامل", "مراتي", "mraty"]):
-        base_paragraphs = [
-            "I still cannot forget the exact feeling of walking through the front door after a long day at work, completely unaware that my life was about to change forever.",
-            "My wife was waiting for me with the biggest, most radiant smile on her face. Without saying a word, she handed me a small, unexpected package containing a positive pregnancy test.",
-            "After months of waiting, hoping, and dreaming about this exact moment, she was finally pregnant! Time seemed to freeze right there in the hallway.",
-            "All the tiredness from work vanished instantly, replaced by pure, overwhelming joy and tears of happiness. We are going to be parents!",
-            "I wanted to capture and share this milestone with all of you because some moments in life are just too precious to keep to yourself.",
-            "Looking ahead to this journey, we know there will be late nights, endless learning, and brand new challenges, but we could not be more ready.",
-            "Every doctor visit, every baby milestone, and every step forward will be a testament to love, patience, and family.",
-            "To everyone who has supported us and shared their positive energy, thank you from the bottom of our hearts.",
-            "If you are watching this, drop your warmest congratulations and best wishes for our growing family below!"
-        ]
-        search_keys = ["positive pregnancy test", "happy couple", "baby shoes", "celebration", "family joy"]
-        hooks = [
-            "The most life-changing surprise when coming home from work!",
-            "After months of waiting, this happened!",
-            "My wife's incredible surprise that changed everything!"
-        ]
-        seo_tags = "pregnancy announcement, baby surprise, having a baby, family milestone, positive pregnancy test, emotional reaction, parent to be, viral story, baby news, blessed"
-        return base_paragraphs, search_keys, hooks, seo_tags
+    # Payload for public dynamic AI router
+    try:
+        url = "https://text.pollinations.ai/"
+        prompt_data = f"{system_instruction}\n\nUser Input: {user_prompt}\n\nFormat your output as valid JSON with keys: 'script', 'hooks' (array), 'search_keywords' (array), 'seo_tags' (string)."
+        
+        response = requests.post(url, json={"messages": [{"role": "user", "content": prompt_data}], "jsonMode": True}, timeout=15)
+        if response.status_code == 200:
+            try:
+                res_json = json.loads(response.text)
+                if "script" in res_json:
+                    return res_json
+            except:
+                pass
+    except:
+        pass
 
-    # Check for Food / Cooking / Recipe / Cake Intent (Franco & Arabic)
-    if any(kw in text for kw in ["cake", "cholate", "chocolate", "كيك", "شيكولاتة", "شوكولاتة", "tare2et", "3amal", "cook", "recipe", "baking", "beat", "bet"]):
-        base_paragraphs = [
-            "Today, I'm going to show you the easiest and most delicious way to make a rich, moist homemade chocolate cake right in your own kitchen!",
-            "First, let's look at the simple ingredients you'll need: fresh eggs, sugar, flour, premium cocoa powder, milk, butter, and a pinch of baking powder.",
-            "Start by whisking your dry ingredients together in a large bowl—flour, cocoa powder, and baking powder—so everything mixes evenly.",
-            "In a separate bowl, blend the eggs, melted butter, and sugar until smooth and creamy before gently combining the wet and dry mixtures.",
-            "Pour your rich chocolate batter into a pre-greased baking pan, smoothing the top for a perfectly flat bake.",
-            "Bake in a preheated oven at 180 degrees Celsius for about 30 to 35 minutes until a toothpick inserted in the center comes out clean.",
-            "Once baked, let the cake cool down before drizzling a rich, shiny chocolate glaze or ganache over the top for that incredible bakery finish.",
-            "Slice it up, serve it fresh, and enjoy every single bite of this rich homemade chocolate goodness with your friends and family!"
-        ]
-        search_keys = ["chocolate cake", "baking ingredients", "mixing bowl cocoa", "oven baking cake", "chocolate glaze slice"]
-        hooks = [
-            "The ultimate homemade chocolate cake recipe you must try!",
-            "How to bake a rich chocolate cake in simple steps!",
-            "The secret to a super moist chocolate cake at home!"
-        ]
-        seo_tags = "homemade chocolate cake, chocolate cake recipe, baking at home, easy dessert recipe, moist cake, baking tips, delicious desserts, chocolate glaze, cake tutorial"
-        return base_paragraphs, search_keys, hooks, seo_tags
-
-    # Default Dynamic Topic Builder
-    clean_words = [w for w in re.findall(r'\b[a-zA-Z]{3,}\b', text) if w not in ["e3mely", "video", "a3len", "3ayez", "beh", "hya", "kanet", "lma", "rge3t"]]
-    subject = " ".join(clean_words[:3]) if clean_words else "an exciting story"
+    # Fallback AI-like rule parser if network call delays
+    clean_text = user_prompt.lower()
     
-    base_paragraphs = [
-        f"Today we are diving into an incredibly interesting subject: {subject}.",
-        "Understanding how this works step by step gives us practical insights that we can apply directly in our daily routine.",
-        "When we break down the core components, it becomes much easier to see why this matters so much.",
-        "From the initial setup to the final results, every detail plays a crucial role in making this a success.",
-        "Taking these principles into account helps us avoid common mistakes and get the best possible outcome.",
-        "If you found these steps helpful and clear, make sure to like and follow for more detailed guides!"
-    ]
-    search_keys = [subject, "practical guide", "step by step", "inspiration"]
-    hooks = [
-        f"Everything you need to know about {subject}!",
-        "The complete guide explained simply!",
-        "Why this is more important than you think!"
-    ]
-    seo_tags = f"{subject}, guide, tutorial, insights, step by step, viral story, trending"
-    return base_paragraphs, search_keys, hooks, seo_tags
+    # Extract subjects dynamically
+    words = [w for w in re.findall(r'\b[a-zA-Z0-9]{3,}\b', clean_text) if w not in ["e3mely", "video", "a3len", "3ayez", "tare2et", "3amal", "beat", "bet", "about"]]
+    subject = " ".join(words) if words else "your requested topic"
+
+    return {
+        "script": f"Welcome everyone! Today we are taking a complete, step-by-step look into {subject}. "
+                  f"Whether you are trying this for the first time or looking to perfect your skills, we have broken down every essential detail for you. "
+                  f"First, let's prepare all the key components needed for {subject}. "
+                  f"Next, follow along carefully as we walk through the process from start to finish, ensuring you get the absolute best results every single time. "
+                  f"Notice how each step connects together smoothly to create something truly impressive. "
+                  f"Give this a try yourself, and share your results and questions in the comments below!",
+        "hooks": [f"How to master {subject} in simple steps!", f"The ultimate guide to {subject}!", f"Secrets to perfect {subject} at home!"],
+        "search_keywords": words[:5] if words else ["delicious food", "cooking", "preparation"],
+        "seo_tags": f"{subject}, tutorial, guide, step by step, how to, viral video, top tips"
+    }
 
 # Helper function to fetch guaranteed REAL HD photos
 def fetch_guaranteed_web_photo(keyword, width, height, index=0):
@@ -233,29 +214,16 @@ if generate_btn:
             width, height = (720, 1280) if is_short else (1280, 720)
             target_words = int(duration * 135) if not is_short else int(duration * 60 * 2.2)
             
-            update_progress(10, "📝 Step 1/5: Translating Franco/Arabic intent & crafting natural English script...")
+            update_progress(10, "🧠 Step 1/5: AI Engine interpreting your topic & generating custom script...")
             
-            base_paragraphs, search_keys, hooks, seo_tags = process_user_intent_deep(topic)
-
-            custom_script = ""
-            para_idx = 0
-            words_count = 0
-            
-            while words_count < target_words:
-                current_p = base_paragraphs[para_idx % len(base_paragraphs)]
-                if para_idx >= len(base_paragraphs):
-                    cycle_num = (para_idx // len(base_paragraphs)) + 1
-                    current_p = f"In addition, taking a closer look at step {cycle_num}, " + current_p[0].lower() + current_p[1:]
-                
-                custom_script += current_p + " "
-                words_count = len(custom_script.split())
-                para_idx += 1
+            # Pure Dynamic Generation via AI Engine
+            ai_output = generate_ai_dynamic_content(topic, target_words, style)
 
             script_data = {
-                "hooks": hooks,
-                "script": custom_script.strip(),
-                "tags": seo_tags,
-                "search_keywords": search_keys
+                "hooks": ai_output.get("hooks", ["Check this out!"]),
+                "script": ai_output.get("script", "No script generated."),
+                "tags": ai_output.get("seo_tags", "video, viral"),
+                "search_keywords": ai_output.get("search_keywords", ["cooking", "food"])
             }
             
             data = script_data
@@ -296,7 +264,7 @@ if generate_btn:
                     custom_video_used = True
 
             if not custom_video_used:
-                keywords = data.get("search_keywords", ["chocolate cake", "baking ingredients"])
+                keywords = data.get("search_keywords", ["food", "cooking"])
                 for idx, kw in enumerate(keywords):
                     img = fetch_guaranteed_web_photo(kw, width, height, index=idx)
                     if img:
@@ -304,7 +272,7 @@ if generate_btn:
                         
             if not custom_video_used and len(scene_images) == 0:
                 for idx in range(6):
-                    img = fetch_guaranteed_web_photo("chocolate cake", width, height, index=idx)
+                    img = fetch_guaranteed_web_photo("food", width, height, index=idx)
                     if img:
                         scene_images.append(img)
 
