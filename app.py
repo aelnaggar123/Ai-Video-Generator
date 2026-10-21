@@ -87,36 +87,12 @@ with col_action2:
         st.session_state.generated_data = None
         st.rerun()
 
-# Advanced Franco & Arabic Intent Processor
-def process_user_intent(raw_text):
-    text = raw_text.strip()
-    low = text.lower()
-
-    # Strip conversational prefixes (Arabic / Franco / English)
-    prefixes = [
-        r"^e3mel(y)?\s+video\s+(a3len\s+beh\s+|3an\s+)?",
-        r"^e3mly\s+video\s+",
-        r"^3ayez\s+video\s+(3an\s+)?",
-        r"^3ayz\s+video\s+",
-        r"^اعمل(ي)?\s+فيديو\s+(عن\s+|اعلن\s+بيه\s+)?",
-        r"^عايز\s+فيديو\s+(عن\s+)?",
-        r"^make\s+a\s+video\s+(about\s+|on\s+)?",
-        r"^create\s+a\s+video\s+(about\s+|on\s+)?"
-    ]
+# Ultra-Smart Franco, Typo, and Recipe Intent Processor
+def process_user_intent_deep(raw_text):
+    text = raw_text.strip().lower()
     
-    cleaned = text
-    for p in prefixes:
-        cleaned = re.sub(p, "", cleaned, flags=re.IGNORECASE).strip()
-    
-    cleaned_low = cleaned.lower()
-
-    # Context Mapping: Detecting core subject matter
-    is_pregnancy = any(kw in cleaned_low for w in ["hamil", "7amel", "pregnancy", "pregrant", "baby", "حامل", "مراتي", "mraty", "test"] for kw in [w])
-    is_tech = any(kw in cleaned_low for w in ["tech", "ai", "coding", "software", "تكنولوجيا", "برمجة"] for kw in [w])
-    is_educational = any(kw in cleaned_low for w in ["learn", "explain", "how to", "شرح", "تعلم"] for kw in [w])
-
-    if is_pregnancy:
-        concept_english = "pregnancy announcement surprise"
+    # Check for Pregnancy / Personal Milestone Intent
+    if any(kw in text for kw in ["hamil", "7amel", "pregnancy", "pregrant", "baby", "حامل", "مراتي", "mraty"]):
         base_paragraphs = [
             "I still cannot forget the exact feeling of walking through the front door after a long day at work, completely unaware that my life was about to change forever.",
             "My wife was waiting for me with the biggest, most radiant smile on her face. Without saying a word, she handed me a small, unexpected package containing a positive pregnancy test.",
@@ -135,31 +111,49 @@ def process_user_intent(raw_text):
             "My wife's incredible surprise that changed everything!"
         ]
         seo_tags = "pregnancy announcement, baby surprise, having a baby, family milestone, positive pregnancy test, emotional reaction, parent to be, viral story, baby news, blessed"
-    else:
-        # Convert Franco tokens to clean English search topics automatically
-        clean_tokens = [w for w in re.findall(r'\b[a-zA-Z]{3,}\b', cleaned) if w.lower() not in ["video", "e3mely", "a3len", "3ayez", "beh", "hya", "kanet", "lma", "rge3t"]]
-        topic_subject = " ".join(clean_tokens[:3]) if clean_tokens else "an inspiring story"
-        concept_english = topic_subject
+        return base_paragraphs, search_keys, hooks, seo_tags
 
+    # Check for Food / Cooking / Recipe / Cake Intent (Franco & Arabic)
+    if any(kw in text for kw in ["cake", "cholate", "chocolate", "كيك", "شيكولاتة", "شوكولاتة", "tare2et", "3amal", "cook", "recipe", "baking", "beat", "bet"]):
         base_paragraphs = [
-            f"Let's talk about something truly fascinating today: {topic_subject}.",
-            "When we look closer at this subject, it reveals incredible details and perspectives that change how we see things.",
-            "Every single aspect brings unique insights, helping us understand the bigger picture much more clearly.",
-            "Taking the time to break down these core elements allows us to appreciate the true value behind it.",
-            "As we move forward, you will notice how all these pieces connect naturally to form a complete story.",
-            "Many people wonder what makes this so special, and the answer lies in its everyday impact and significance.",
-            "Reflecting on these details reminds us why staying curious and exploring new ideas is so rewarding.",
-            "Thank you for following along. Let us know your thoughts and feedback in the comments below!"
+            "Today, I'm going to show you the easiest and most delicious way to make a rich, moist homemade chocolate cake right in your own kitchen!",
+            "First, let's look at the simple ingredients you'll need: fresh eggs, sugar, flour, premium cocoa powder, milk, butter, and a pinch of baking powder.",
+            "Start by whisking your dry ingredients together in a large bowl—flour, cocoa powder, and baking powder—so everything mixes evenly.",
+            "In a separate bowl, blend the eggs, melted butter, and sugar until smooth and creamy before gently combining the wet and dry mixtures.",
+            "Pour your rich chocolate batter into a pre-greased baking pan, smoothing the top for a perfectly flat bake.",
+            "Bake in a preheated oven at 180 degrees Celsius for about 30 to 35 minutes until a toothpick inserted in the center comes out clean.",
+            "Once baked, let the cake cool down before drizzling a rich, shiny chocolate glaze or ganache over the top for that incredible bakery finish.",
+            "Slice it up, serve it fresh, and enjoy every single bite of this rich homemade chocolate goodness with your friends and family!"
         ]
-        search_keys = [topic_subject, "storytelling", "meaningful moments", "inspiration"]
+        search_keys = ["chocolate cake", "baking ingredients", "mixing bowl cocoa", "oven baking cake", "chocolate glaze slice"]
         hooks = [
-            f"The real truth about {topic_subject}!",
-            "Why this topic matters more than you think!",
-            "Everything you need to know explained clearly!"
+            "The ultimate homemade chocolate cake recipe you must try!",
+            "How to bake a rich chocolate cake in simple steps!",
+            "The secret to a super moist chocolate cake at home!"
         ]
-        seo_tags = f"{topic_subject}, viral video, storytelling, trending topic, deep dive, informative, top insights, Youtube Shorts, compelling story"
+        seo_tags = "homemade chocolate cake, chocolate cake recipe, baking at home, easy dessert recipe, moist cake, baking tips, delicious desserts, chocolate glaze, cake tutorial"
+        return base_paragraphs, search_keys, hooks, seo_tags
 
-    return concept_english, base_paragraphs, search_keys, hooks, seo_tags
+    # Default Dynamic Topic Builder
+    clean_words = [w for w in re.findall(r'\b[a-zA-Z]{3,}\b', text) if w not in ["e3mely", "video", "a3len", "3ayez", "beh", "hya", "kanet", "lma", "rge3t"]]
+    subject = " ".join(clean_words[:3]) if clean_words else "an exciting story"
+    
+    base_paragraphs = [
+        f"Today we are diving into an incredibly interesting subject: {subject}.",
+        "Understanding how this works step by step gives us practical insights that we can apply directly in our daily routine.",
+        "When we break down the core components, it becomes much easier to see why this matters so much.",
+        "From the initial setup to the final results, every detail plays a crucial role in making this a success.",
+        "Taking these principles into account helps us avoid common mistakes and get the best possible outcome.",
+        "If you found these steps helpful and clear, make sure to like and follow for more detailed guides!"
+    ]
+    search_keys = [subject, "practical guide", "step by step", "inspiration"]
+    hooks = [
+        f"Everything you need to know about {subject}!",
+        "The complete guide explained simply!",
+        "Why this is more important than you think!"
+    ]
+    seo_tags = f"{subject}, guide, tutorial, insights, step by step, viral story, trending"
+    return base_paragraphs, search_keys, hooks, seo_tags
 
 # Helper function to fetch guaranteed REAL HD photos
 def fetch_guaranteed_web_photo(keyword, width, height, index=0):
@@ -241,7 +235,7 @@ if generate_btn:
             
             update_progress(10, "📝 Step 1/5: Translating Franco/Arabic intent & crafting natural English script...")
             
-            concept, base_paragraphs, search_keys, hooks, seo_tags = process_user_intent(topic)
+            base_paragraphs, search_keys, hooks, seo_tags = process_user_intent_deep(topic)
 
             custom_script = ""
             para_idx = 0
@@ -251,7 +245,7 @@ if generate_btn:
                 current_p = base_paragraphs[para_idx % len(base_paragraphs)]
                 if para_idx >= len(base_paragraphs):
                     cycle_num = (para_idx // len(base_paragraphs)) + 1
-                    current_p = f"Furthermore, exploring deeper into phase {cycle_num}, " + current_p[0].lower() + current_p[1:]
+                    current_p = f"In addition, taking a closer look at step {cycle_num}, " + current_p[0].lower() + current_p[1:]
                 
                 custom_script += current_p + " "
                 words_count = len(custom_script.split())
@@ -302,7 +296,7 @@ if generate_btn:
                     custom_video_used = True
 
             if not custom_video_used:
-                keywords = data.get("search_keywords", ["storytelling", "moment"])
+                keywords = data.get("search_keywords", ["chocolate cake", "baking ingredients"])
                 for idx, kw in enumerate(keywords):
                     img = fetch_guaranteed_web_photo(kw, width, height, index=idx)
                     if img:
@@ -310,7 +304,7 @@ if generate_btn:
                         
             if not custom_video_used and len(scene_images) == 0:
                 for idx in range(6):
-                    img = fetch_guaranteed_web_photo("storytelling", width, height, index=idx)
+                    img = fetch_guaranteed_web_photo("chocolate cake", width, height, index=idx)
                     if img:
                         scene_images.append(img)
 
