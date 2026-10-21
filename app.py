@@ -14,7 +14,7 @@ from io import BytesIO
 st.set_page_config(page_title="A & W AI Video Creation Tool", page_icon="🎬", layout="wide")
 
 st.title("🎬 A & W AI Video Creation Tool")
-st.caption("Advanced AI Scripting, Smart Real Web HD Visuals, Voices, Subtitles & Smooth Motion Assembly.")
+st.caption("Pure Smart AI Scripting, Real HD Visuals, Voices, Subtitles & Smooth Motion Assembly.")
 
 # Initialize Session State
 if "generated_data" not in st.session_state:
@@ -25,7 +25,7 @@ secret_gemini_key = st.secrets.get("GEMINI_API_KEY", "") if hasattr(st, "secrets
 
 # Sidebar Configuration
 st.sidebar.header("⚙️ Settings & Voices")
-gemini_key = st.sidebar.text_input("Gemini API Key (Optional / AIza...)", value=secret_gemini_key, type="password")
+gemini_key = st.sidebar.text_input("Gemini API Key (Required for Smart AI)", value=secret_gemini_key, type="password")
 
 voice_option = st.sidebar.selectbox(
     "🎙️ Voice Accent & Gender:",
@@ -56,7 +56,7 @@ if st.sidebar.button("🔄 Start New Project", use_container_width=True):
 col1, col2 = st.columns([2, 1])
 
 with col1:
-    topic = st.text_input("💡 Video Topic / Idea (Franco, Arabic, or English):", value="Tesla’s Flying Car: Pure Genius or Billionaire Marketing Fraud?")
+    topic = st.text_input("💡 Video Topic / Idea (Franco, Arabic, or English):", value="Kids educational video teaching ABCD letters in a fun and fast way")
     style = st.selectbox(
         "🎭 Tone & Style:",
         ["Fast-Paced & Energetic", "Engaging & Dramatic", "Educational & Simple", "Storytelling & Inspiring"]
@@ -73,13 +73,13 @@ with col2:
     )
     
     if video_format == "Long Video (1-15 min)":
-        duration = st.slider("⏱️ Target Duration (Minutes):", 1.0, 15.0, 2.0, 0.5)
+        duration = st.slider("⏱️ Target Duration (Minutes):", 1.0, 15.0, 1.0, 0.5)
     else:
         duration = 0.75
 
 enable_subtitles = st.checkbox("💬 Burn-in Dynamic Subtitles on Video", value=True)
 
-generate_btn = st.button("🚀 Generate Smart Context Video", type="primary", use_container_width=True)
+generate_btn = st.button("🚀 Generate Pure Smart AI Video", type="primary", use_container_width=True)
 
 # Helper function to fetch guaranteed REAL HD photos directly from live web image providers
 def fetch_guaranteed_web_photo(keyword, width, height, index=0):
@@ -120,8 +120,10 @@ def split_script_into_chunks(script_text, max_words=4):
 if generate_btn:
     active_gemini_key = gemini_key if gemini_key else secret_gemini_key
     
-    if not topic:
-        st.warning("⚠️ Please provide a video topic or idea!")
+    if not active_gemini_key:
+        st.error("⚠️ يرجى إدخال مفتاح Gemini API Key في القائمة الجانبية لتجنب القوالب الجاهزة!")
+    elif not topic:
+        st.warning("⚠️ يرجى كتابة فكرة الفيديو أولاً!")
     else:
         progress_bar = st.progress(0)
         status_text = st.empty()
@@ -132,74 +134,50 @@ if generate_btn:
             width, height = (720, 1280) if is_short else (1280, 720)
             target_words = int(duration * 135) if not is_short else int(duration * 60 * 2.2)
             
-            status_text.text("📝 Step 1/4: Deep analyzing topic & writing tailored script... [Est: 5s]")
+            status_text.text("📝 الخطوة 1/4: تحليل الفكرة بالذكاء الاصطناعي وكتابة السكربت المخصص... [Est: 5s]")
             progress_bar.progress(15)
             
             script_data = None
             
-            # Use Gemini with advanced prompt engineering to avoid templates and copy-paste
-            if active_gemini_key and active_gemini_key.startswith("AIza"):
-                try:
-                    url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key={active_gemini_key}"
-                    prompt = f"""
-                    You are an elite, highly intelligent documentary scriptwriter and content creator. 
-                    The user has provided this specific topic/idea: '{topic}'.
-                    
-                    CRITICAL INSTRUCTIONS:
-                    - Do NOT use generic templates or copy-paste the topic blindly.
-                    - Analyze the core meaning, arguments, or questions raised in the user's topic deeply.
-                    - Write a fully custom, engaging, professional voiceover script in English that directly discusses, analyzes, and explores this exact topic in depth. Tone: {style}. Target Word Count MUST be around EXACTLY {target_words} words.
-                    - Extract 8-10 specific, highly relevant English visual search keywords related directly to the concepts inside the topic.
-                    - Generate 3 short viral hooks and comma-separated SEO tags.
-
-                    Return JSON format strictly as follows (no markdown wrapping, no extra text):
-                    {{
-                        "hooks": ["Hook 1", "Hook 2", "Hook 3"],
-                        "script": "Full custom tailored script analyzing the topic...",
-                        "tags": "tag1, tag2, tag3",
-                        "search_keywords": ["keyword1", "keyword2", "keyword3", "keyword4", "keyword5", "keyword6", "keyword7", "keyword8"]
-                    }}
-                    """
-                    payload = {"contents": [{"parts": [{"text": prompt}]}]}
-                    response = requests.post(url, headers={'Content-Type': 'application/json'}, data=json.dumps(payload))
-                    if response.status_code == 200:
-                        result = response.json()
-                        raw_text = result['candidates'][0]['content']['parts'][0]['text'].strip()
-                        if raw_text.startswith("```json"):
-                            raw_text = raw_text[7:-3].strip()
-                        elif raw_text.startswith("```"):
-                            raw_text = raw_text[3:-3].strip()
-                        script_data = json.loads(raw_text)
-                except:
-                    pass
+            # Requesting strictly from Gemini API with zero fallback templates
+            url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key={active_gemini_key}"
+            prompt = f"""
+            You are an elite, professional content creator. 
+            The user entered this exact video topic/idea (it could be in Arabic, Franco, or English): '{topic}'.
             
-            # Smart Custom Fallback if Gemini key is missing
-            if not script_data:
-                clean_topic_words = [w for w in topic.split() if len(w) > 3]
-                main_kw = clean_topic_words[0] if clean_topic_words else "innovation"
-                sec_kw = clean_topic_words[1] if len(clean_topic_words) > 1 else "technology"
-                
-                custom_fallback_script = f"Let's talk about a major subject that everyone is discussing right now: {topic}. When looking closely at this idea, we need to break down what makes it so important today. Analysts and experts have pointed out multiple dimensions to this story. On one hand, the core concept challenges traditional thinking and opens doors to new possibilities. On the other hand, skeptics argue we must look at the practical realities, risks, and long-term implications before jumping to conclusions. As this situation continues to evolve, understanding the nuances behind {topic} will help us see the bigger picture of where things are heading next."
-                
-                while len(custom_fallback_script.split()) < target_words:
-                    custom_fallback_script += f" Furthermore, looking deeper into {topic}, the underlying mechanics and market reactions show a clear shift in perspective. Stakeholders are weighing both the potential rewards and the hidden challenges."
+            Strict Rules:
+            1. Analyze the exact meaning of the user's topic deeply. Do NOT copy-paste the topic blindly and do NOT use generic templates.
+            2. Write a custom, engaging, highly relevant voiceover script in English that speaks directly about this topic. Tone: {style}. Target Word Count MUST be around EXACTLY {target_words} words.
+            3. Extract 6 to 8 precise, real-world English visual search keywords in English that strictly match the core subject of the topic (e.g., if it's about kids and ABC, keywords should be 'kids learning', 'alphabet letters', 'children education', 'colorful toys', 'kindergarten classroom').
+            4. Generate 3 short viral hooks and comma-separated SEO tags.
 
-                script_data = {
-                    "hooks": [
-                        f"The hidden reality behind {topic}!",
-                        f"Why everyone is getting {topic} completely wrong!",
-                        f"The ultimate breakdown of {topic}!"
-                    ],
-                    "script": custom_fallback_script,
-                    "tags": f"{topic}, analysis, trending, insights, deep dive",
-                    "search_keywords": [main_kw, sec_kw, "business", "innovation", "future", "strategy", "technology", "modern"]
-                }
+            Return JSON format strictly as follows (no markdown wrapping, no extra text):
+            {{
+                "hooks": ["Hook 1", "Hook 2", "Hook 3"],
+                "script": "Full custom voiceover narration script...",
+                "tags": "tag1, tag2, tag3",
+                "search_keywords": ["keyword1", "keyword2", "keyword3", "keyword4", "keyword5", "keyword6"]
+            }}
+            """
+            payload = {"contents": [{"parts": [{"text": prompt}]}]}
+            response = requests.post(url, headers={'Content-Type': 'application/json'}, data=json.dumps(payload))
             
-            data = script_data
+            if response.status_code != 200:
+                st.error(f"خطأ في الاتصال بـ Gemini API ({response.status_code}): تأكد من صحة المفتاح الخاص بك.")
+                st.stop()
+                
+            result = response.json()
+            raw_text = result['candidates'][0]['content']['parts'][0]['text'].strip()
+            if raw_text.startswith("```json"):
+                raw_text = raw_text[7:-3].strip()
+            elif raw_text.startswith("```"):
+                raw_text = raw_text[3:-3].strip()
+                
+            data = json.loads(raw_text)
             progress_bar.progress(30)
 
             # Step 2: Voiceover Generation
-            status_text.text(f"🎙️ Step 2/4: Synthesizing voiceover ({target_words} words)... [Est: 10s]")
+            status_text.text(f"🎙️ الخطوة 2/4: توليد التعليق الصوتي ({target_words} كلمة)... [Est: 10s]")
             audio_raw = "raw_voice.mp3"
             audio_final = "final_voice.mp3"
             
@@ -214,8 +192,8 @@ if generate_btn:
             final_audio_dur = float(subprocess.check_output(probe_cmd, shell=True).decode('utf-8').strip())
             progress_bar.progress(50)
 
-            # Step 3: Fetch Real HD Photos
-            status_text.text("🌐 Step 3/4: Downloading HD photos matching topic keywords... [Est: 10s]")
+            # Step 3: Fetch Real HD Photos matching exact topic keywords
+            status_text.text("🌐 الخطوة 3/4: جلب صور حقيقية عالية الدقة مرتبطة بالفكرة مباشرة... [Est: 10s]")
             
             fps = 24
             total_frames = int(fps * final_audio_dur)
@@ -238,7 +216,7 @@ if generate_btn:
                     custom_video_used = True
 
             if not custom_video_used:
-                keywords = data.get("search_keywords", ["technology", "innovation", "future"])
+                keywords = data.get("search_keywords", ["education", "kids"])
                 for idx, kw in enumerate(keywords):
                     img = fetch_guaranteed_web_photo(kw, width, height, index=idx)
                     if img:
@@ -246,12 +224,12 @@ if generate_btn:
                         
             if not custom_video_used and len(scene_images) == 0:
                 for idx in range(6):
-                    img = fetch_guaranteed_web_photo("technology", width, height, index=idx)
+                    img = fetch_guaranteed_web_photo("education", width, height, index=idx)
                     if img:
                         scene_images.append(img)
 
             # Step 4: Render Motion Video & Burn Subtitles
-            status_text.text("🎥 Step 4/4: Rendering motion video & burning subtitles... [Est: 15s]")
+            status_text.text("🎥 الخطوة 4/4: إنتاج الفيديو بالحركة الملساء ودمج الترجمة... [Est: 15s]")
             if not custom_video_used and len(scene_images) > 0:
                 fourcc = cv2.VideoWriter_fourcc(*'mp4v')
                 out = cv2.VideoWriter(video_no_audio, fourcc, fps, (width, height))
@@ -316,7 +294,7 @@ if generate_btn:
 
             progress_bar.progress(100)
             elapsed_time = time.time() - start_time
-            status_text.success(f"🎉 Complete! Video Duration: {final_audio_dur:.1f}s (Rendered in {elapsed_time:.1f}s)")
+            status_text.success(f"🎉 تم الانتاج بنجاح! المدة: {final_audio_dur:.1f} ثانية (في {elapsed_time:.1f} ثانية)")
 
             st.session_state.generated_data = {
                 "hooks": data['hooks'],
@@ -329,7 +307,7 @@ if generate_btn:
             }
 
         except Exception as e:
-            st.error(f"An error occurred: {e}")
+            st.error(f"حدث خطأ أثناء التنفيذ: {e}")
 
 if st.session_state.generated_data:
     res = st.session_state.generated_data
@@ -338,13 +316,13 @@ if st.session_state.generated_data:
     col_left, col_right = st.columns([1, 1])
     
     with col_left:
-        st.subheader(f"📺 Final Video Output ({res['duration']:.1f}s)")
+        st.subheader(f"📺 فيديو النتيجة النهائية ({res['duration']:.1f} ثانية)")
         st.video(res["video_path"])
         
         file_label = "Shorts_MP4" if res["is_short"] else "Video_MP4"
         with open(res["video_path"], "rb") as f:
             st.download_button(
-                label=f"⬇️ Download {file_label}",
+                label=f"⬇️ تحميل {file_label}",
                 data=f,
                 file_name=f"AI_{file_label}_{res['topic'][:10].replace(' ', '_')}.mp4",
                 mime="video/mp4",
@@ -352,13 +330,13 @@ if st.session_state.generated_data:
             )
             
     with col_right:
-        st.subheader("🎯 High-CTR Short Viral Hooks")
+        st.subheader("🎯 عناوين جاذبة (Hooks)")
         for idx, hook in enumerate(res["hooks"], 1):
             st.info(f"**Hook {idx}:** {hook}")
             
-        st.subheader("📌 Highly Related SEO Tags & Keywords")
+        st.subheader("📌 كلمات مفتاحية (SEO Tags)")
         st.code(res["tags"], language="text")
 
     st.markdown("---")
-    st.subheader("🎙️ Generated Voiceover Script")
-    st.text_area("Copy Script Text:", res["script"], height=180)
+    st.subheader("🎙️ السكربت الصوتي المولّد بالذكاء الاصطناعي")
+    st.text_area("نسخ النص:", res["script"], height=180)
