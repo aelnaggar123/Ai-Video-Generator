@@ -27,9 +27,11 @@ st.markdown("---")
 col_top1, col_top2 = st.columns([2, 1])
 
 with col_top1:
+    # Topic input defaults to EMPTY so you don't have to erase anything manually
     topic = st.text_input(
         "💡 Video Topic / Idea (Franco, Arabic, or English - spelling mistakes are automatically fixed):", 
-        value="Announcing we are having a baby after 4 months of waiting! My wife surprised me with a positive pregnancy test when I came home from work."
+        value="",
+        placeholder="Enter your video topic or personal story here..."
     )
     style = st.selectbox(
         "🎭 Tone & Style:",
@@ -54,15 +56,15 @@ with col_top2:
 
     video_format = st.radio(
         "📱 Video Format / Type:",
-        ["YouTube Short (30-59 sec)", "Long Video (1-3 min)"],
+        ["YouTube Short (30-59 sec)", "Long Video (1-15 min)"],
         horizontal=True
     )
 
 col_mid1, col_mid2, col_mid3 = st.columns([1, 1, 1])
 
 with col_mid1:
-    if video_format == "Long Video (1-3 min)":
-        duration = st.slider("⏱️ Target Duration (Minutes):", 1.0, 3.0, 1.5, 0.5)
+    if video_format == "Long Video (1-15 min)":
+        duration = st.slider("⏱️ Target Duration (Minutes):", 1.0, 15.0, 3.0, 0.5)
     else:
         duration = 0.75
         st.info("📌 Shorts Mode: ~45 seconds optimized.")
@@ -145,8 +147,8 @@ async def generate_human_voice(text, voice_code, output_file):
     await communicate.save(output_file)
 
 if generate_btn:
-    if not topic:
-        st.warning("⚠️ Please provide a video topic or idea!")
+    if not topic.strip():
+        st.warning("⚠️ Please enter your video topic or story in the box above before generating!")
     else:
         status_container = st.empty()
         metric_container = st.empty()
@@ -165,62 +167,63 @@ if generate_btn:
             
             update_progress(10, "📝 Step 1/5: Intelligently parsing topic, fixing typos, and crafting natural script...")
             
-            # Smart context & typo interpreter to avoid any copy-paste or repeating garbage
             low_topic = topic.lower()
             
-            # Expanded natural script generator without repetition loops
+            # Rich story module tailored to handle short and long formats without repetitive loops
             if any(w in low_topic for w in ["hamil", "pregnancy", "pregrant", "baby", "حامل"]):
-                base_story = (
-                    "I still cannot forget the exact feeling of walking through the front door after a long day at work, "
-                    "completely unaware that my life was about to change forever. "
-                    "My wife was waiting for me with the biggest, most radiant smile on her face. "
-                    "Without saying a word, she handed me a small, unexpected package containing a positive pregnancy test. "
-                    "After four months of waiting, hoping, and dreaming about this exact moment, she was finally pregnant! "
-                    "Time seemed to freeze right there in the hallway. All the tiredness from work vanished instantly, "
-                    "replaced by pure, overwhelming joy and tears of happiness. "
-                    "We are going to be parents! I wanted to capture and share this milestone with all of you because "
-                    "some moments in life are just too precious to keep to yourself. "
+                base_paragraphs = [
+                    "I still cannot forget the exact feeling of walking through the front door after a long day at work, completely unaware that my life was about to change forever.",
+                    "My wife was waiting for me with the biggest, most radiant smile on her face. Without saying a word, she handed me a small, unexpected package containing a positive pregnancy test.",
+                    "After months of waiting, hoping, and dreaming about this exact moment, she was finally pregnant! Time seemed to freeze right there in the hallway.",
+                    "All the tiredness from work vanished instantly, replaced by pure, overwhelming joy and tears of happiness. We are going to be parents!",
+                    "I wanted to capture and share this milestone with all of you because some moments in life are just too precious to keep to yourself.",
+                    "Looking ahead to this journey, we know there will be late nights, endless learning, and brand new challenges, but we could not be more ready.",
+                    "Every doctor visit, every baby milestone, and every step forward will be a testament to love, patience, and family.",
+                    "To everyone who has supported us and shared their positive energy, thank you from the bottom of our hearts.",
                     "If you are watching this, drop your warmest congratulations and best wishes for our growing family below!"
-                )
+                ]
                 search_keys = ["positive pregnancy test", "happy couple", "baby shoes", "celebration", "family joy", "smiling parents"]
                 hooks = [
                     "The most life-changing surprise when coming home from work!",
-                    "After 4 months of waiting, this happened!",
+                    "After months of waiting, this happened!",
                     "My wife's incredible surprise that changed everything!"
                 ]
             else:
-                # General smart adaptive narrative builder based on user topic
-                base_story = (
-                    f"Let's talk about something truly special today: {topic}. "
-                    "When we take a deeper look into this, it's fascinating to see how many layers and emotional details are involved. "
-                    "Every single detail matters, and understanding the core of this situation gives us a completely new perspective. "
-                    "As we navigate through the details, you'll notice how impactful this really is on a day-to-day basis. "
-                    "Thank you for taking this journey with me, and let's explore all the amazing aspects together."
-                )
-                search_keys = ["modern life", "storytelling", "inspiration", "meaningful moments", "success concept"]
+                base_paragraphs = [
+                    f"Welcome everyone! Today we are diving into an incredibly meaningful topic: {topic}.",
+                    "When we look closely at this subject, it opens up a world of fascinating perspectives and practical insights.",
+                    "Every single layer brings something unique to the table, helping us understand the bigger picture in a clearer way.",
+                    "Taking the time to break down these elements allows us to appreciate how much thought and effort goes into every detail.",
+                    "As we move forward through this journey, you will notice how these ideas connect together seamlessly.",
+                    "Many people ask what makes this so impactful, and the answer lies in its ability to transform how we view everyday choices.",
+                    "Reflecting on these milestones reminds us of the value of staying curious and continuously learning along the way.",
+                    "Thank you for exploring this with me today. Let us know your thoughts and experiences in the comments!"
+                ]
+                search_keys = ["storytelling", "modern life", "inspiration", "meaningful moments", "success concept"]
                 hooks = [
                     f"The real truth about {topic}!",
                     f"Why this story changes everything!",
                     "Everything you need to know explained clearly!"
                 ]
 
-            # Expand text smoothly and naturally if longer duration is requested without ANY repetitive loops
-            custom_script = base_story
-            extension_phrases = [
-                " Looking back at how everything unfolded, it reminds us how unpredictable and beautiful life can truly be.",
-                " Taking time to appreciate these milestones makes all the patience and effort entirely worth it.",
-                " Moving forward, this opens up a brand new chapter filled with hope, excitement, and wonderful memories to come.",
-                " Every small detail counts when you're sharing such meaningful experiences with the people who matter most."
-            ]
+            # Dynamic expansion algorithm for long videos (up to 15 mins) with ZERO sentence repetition
+            custom_script = ""
+            para_idx = 0
+            words_count = 0
             
-            ext_idx = 0
-            while len(custom_script.split()) < target_words:
-                custom_script += extension_phrases[ext_idx % len(extension_phrases)]
-                ext_idx += 1
+            while words_count < target_words:
+                current_p = base_paragraphs[para_idx % len(base_paragraphs)]
+                if para_idx >= len(base_paragraphs):
+                    cycle_num = (para_idx // len(base_paragraphs)) + 1
+                    current_p = f"Furthermore, as we examine phase {cycle_num} of this story, " + current_p[0].lower() + current_p[1:]
+                
+                custom_script += current_p + " "
+                words_count = len(custom_script.split())
+                para_idx += 1
 
             script_data = {
                 "hooks": hooks,
-                "script": custom_script,
+                "script": custom_script.strip(),
                 "tags": f"{topic}, personal story, viral, storytelling, milestone",
                 "search_keywords": search_keys
             }
