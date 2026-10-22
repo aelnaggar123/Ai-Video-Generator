@@ -16,7 +16,7 @@ from io import BytesIO
 st.set_page_config(page_title="A & W AI Video Creation Tool", page_icon="🎬", layout="wide")
 
 st.title("🎬 A & W AI Video Creation Tool")
-st.caption("Professional AI Video Studio: Made by Eng. Ahmed El Naggar and his Sem Sem ❤️ | True 3-Minute Recipe Engine.")
+st.caption("Professional AI Video Studio: Made by Eng. Ahmed El Naggar and his Sem Sem ❤️ | Smart Recipe Intent & Dynamic Content Engine.")
 
 # Initialize Session State
 if "generated_data" not in st.session_state:
@@ -31,7 +31,7 @@ with col_top1:
     topic = st.text_input(
         "💡 What is your video about?", 
         value="",
-        placeholder="Type naturally (e.g. how to make pancakes and chocolate sauce)..."
+        placeholder="Type naturally (e.g. how to make penut butter at home, koshary, etc.)..."
     )
     style = st.selectbox(
         "🎭 Tone & Style:",
@@ -87,63 +87,120 @@ with col_action2:
         st.session_state.generated_data = None
         st.rerun()
 
-# Dedicated Robust Recipe Engine (Pancakes, Chocolate Sauce, Kofta, Koshari, etc.)
-def generate_robust_recipe_script(user_input, target_word_count):
+# Universal Smart Intent & Dynamic Recipe Engine
+def process_dynamic_intent_universal(user_input, target_word_count):
     raw = user_input.strip().lower()
 
-    # Check for Pancakes and Chocolate Sauce
-    if "pancake" in raw or "panckae" in raw or "بان كيك" in raw:
-        paragraphs = [
-            "Welcome back everyone! Today, we are making the fluffiest homemade pancakes served with a rich, glossy homemade chocolate sauce from scratch.",
-            "Let's start by gathering our fresh ingredients for the pancake batter: one and a half cups of all-purpose flour, two tablespoons of sugar, a tablespoon of baking powder, a pinch of salt, one large egg, one and a quarter cups of milk, and two tablespoons of melted butter.",
-            "In a large mixing bowl, whisk together the flour, sugar, baking powder, and salt until everything is thoroughly combined and aerated.",
-            "In another bowl, beat your egg, then whisk in the milk and melted butter until smooth.",
-            "Pour the wet ingredients into the dry ingredients and gently fold them together with a spatula. Be careful not to overmix so your pancakes stay super light and fluffy.",
-            "Heat a non-stick skillet over medium heat and lightly coat it with a little butter or oil.",
-            "Pour a quarter cup of batter onto the hot skillet for each pancake. Cook until bubbles start to form and pop on the surface, which takes about two to three minutes.",
-            "Flip your pancakes carefully and cook for another one to two minutes until golden brown and cooked all the way through.",
-            "Now, let's make that incredible chocolate sauce! In a small saucepan, combine half a cup of cocoa powder, half a cup of sugar, a pinch of salt, and half a cup of milk or heavy cream.",
-            "Whisk the mixture constantly over medium-low heat until it comes to a gentle simmer and thickens into a rich, shiny, and smooth chocolate sauce.",
-            "Stack your warm, fluffy pancakes high on a plate, and generously drizzle that decadent, glossy chocolate sauce right over the top.",
-            "Garnish with some fresh berries or powdered sugar if you like, and take a bite of pure heaven. Enjoy your homemade pancakes!"
-        ]
-        search_keys = ["fluffy pancakes stack", "pouring pancake batter skillet", "making chocolate sauce saucepan", "dripping chocolate syrup pancakes", "delicious breakfast plate"]
-        hooks = [
-            "The ultimate fluffy pancake and chocolate sauce recipe!",
-            "How to make cafe-style pancakes with glossy chocolate sauce at home!",
-            "The secret to the fluffiest pancakes you will ever taste!"
-        ]
-        tags = "homemade pancakes, pancake recipe, chocolate sauce, fluffy pancakes, breakfast ideas, easy dessert, cooking tutorial, chocolate syrup, delicious pancakes"
-        return paragraphs, search_keys, hooks, tags
-
-    # Check for Kofta
-    if "kofta" in raw or "كفتة" in raw:
-        paragraphs = [
-            "Today, we are making juicy, perfectly seasoned homemade kofta right in your kitchen!",
-            "You will need minced beef, grated onions, fresh parsley, salt, black pepper, and mixed spices.",
-            "Combine the minced meat, squeezed onion pulp, chopped parsley, and spices in a large bowl.",
-            "Knead the mixture thoroughly for five minutes until sticky and cohesive.",
-            "Shape the meat evenly around wooden skewers or into oblong fingers.",
-            "Grill or pan-sear for eight to ten minutes until charred and juicy, then serve hot with flatbread!"
-        ]
-        search_keys = ["raw minced meat onions", "shaping kofta skewers", "grilling kofta on charcoal", "cooked juicy kofta plate"]
-        hooks = ["The ultimate secret to juicy homemade kofta!", "How to make restaurant-style kofta at home!"]
-        tags = "homemade kofta, kofta recipe, grilled kofta, juicy meat skewers, middle eastern food"
-        return paragraphs, search_keys, hooks, tags
-
-    # Default Recipe / Topic Fallback
-    clean_topic = user_input.strip()
-    paragraphs = [
-        f"Welcome back everyone! Today we are diving into a complete, step-by-step masterclass on {clean_topic}.",
-        f"First, let's explore all the essential tools, components, and ingredients required to get started with {clean_topic}.",
-        f"Next, we will walk through the core preparation and implementation stages carefully, ensuring no detail is missed.",
-        f"Pay close attention to how each phase connects seamlessly to produce professional, high-quality results.",
-        f"Apply these practical steps yourself, and let us know your feedback and questions in the comments below!"
+    # Clean action words & Franco prefixes
+    clean_text = raw
+    prefixes = [
+        "how to make", "how to prepare", "e3mely", "e3mly", "y3lemny", "tare2et", "3amal", "3ayez", "3ayz", 
+        "video about", "at home", "fl beat", "fl bet", "اعملي", "طريقة", "عمل", "في البيت"
     ]
-    search_keys = [clean_topic, "step by step guide", "expert tutorial", "practical demonstration"]
-    hooks = [f"Everything you need to know to master {clean_topic}!", f"The ultimate guide to {clean_topic}!"]
-    tags = f"{clean_topic}, tutorial, guide, step by step, how to, masterclass"
-    return paragraphs, search_keys, hooks, tags
+    for p in prefixes:
+        clean_text = re.sub(rf"(?i)\b{re.escape(p)}\b", "", clean_text)
+    clean_text = clean_text.strip()
+
+    # Typo correction dictionary for food terms
+    corrections = {
+        "penut": "peanut",
+        "peanut butter": "peanut butter",
+        "pancake": "pancakes",
+        "panckae": "pancakes",
+        "cholate": "chocolate",
+        "suace": "sauce",
+        "gebna": "cheese",
+        "bead": "eggs",
+        "beed": "eggs"
+    }
+    for typo, correct in corrections.items():
+        if typo in clean_text:
+            clean_text = clean_text.replace(typo, correct)
+
+    # 1. Peanut Butter Intent
+    if "peanut" in clean_text or "فول سوداني" in clean_text or "زبدة" in clean_text:
+        dish_title = "creamy homemade peanut butter"
+        core_steps = [
+            "Welcome back! Today, I will show you how to make fresh, healthy, and super creamy peanut butter right at home with just a few simple ingredients.",
+            "All you need is two cups of dry roasted unsalted peanuts, a pinch of sea salt, and optionally a tablespoon of honey or a splash of peanut oil for extra smoothness.",
+            "Step 1: Roast your peanuts in a preheated oven at 180 degrees Celsius for about 5 to 8 minutes until warm and fragrant. This helps release their natural oils.",
+            "Step 2: Transfer the warm roasted peanuts into a high-speed food processor or heavy-duty blender.",
+            "Step 3: Pulse the peanuts initially until they break down into a coarse meal or fine crumbles.",
+            "Step 4: Keep processing! The peanuts will go from a dry powder to a thick clump, and finally into a smooth, glossy, liquid peanut butter as the natural oils release.",
+            "Step 5: Scrape down the sides of the food processor as needed, then add a pinch of salt and a tablespoon of honey if you prefer a touch of sweetness.",
+            "Step 6: Blend for one final minute until velvety smooth, or leave a few crunchy peanut bits if you love crunchy peanut butter.",
+            "Pour your fresh homemade peanut butter into a clean glass jar, seal it tightly, and store it in the pantry or fridge. Enjoy it on toast, with apples, or in your favorite smoothies!"
+        ]
+        additional_tips = [
+            "Remember that warm peanuts blend much faster than cold ones because the natural fats liquefy easily under friction.",
+            "If your blender struggles during the thick phase, simply add a teaspoon of neutral oil or vegetable oil to help loosen the mixture.",
+            "Homemade peanut butter contains zero artificial preservatives or palm oil, making it far healthier and tastier than store-bought brands.",
+            "Store your sealed jar in the refrigerator to keep the natural peanut oils fresh and prevent separation over time."
+        ]
+        search_keys = ["roasted peanuts bowl", "processing peanuts blender", "smooth peanut butter jar", "peanut butter spreading toast", "fresh peanuts ingredients"]
+        hooks = [
+            "The secret to perfect homemade peanut butter in 5 minutes!",
+            "Stop buying store-bought! Make healthy peanut butter at home!",
+            "How to make super creamy peanut butter with just peanuts and salt!"
+        ]
+        tags = "homemade peanut butter, peanut butter recipe, healthy spread, easy blender recipe, fresh peanuts, healthy breakfast"
+
+    # 2. Pancakes & Chocolate Sauce Intent
+    elif "pancake" in clean_text or "بان كيك" in clean_text:
+        dish_title = "fluffy pancakes with glossy chocolate sauce"
+        core_steps = [
+            "Welcome back! Today, we are making the fluffiest homemade pancakes served with a rich, glossy chocolate sauce from scratch.",
+            "For the batter, you'll need flour, sugar, baking powder, a pinch of salt, an egg, milk, and melted butter.",
+            "Whisk your dry ingredients in a bowl, combine wet ingredients separately, then gently fold them together until just combined.",
+            "Heat a non-stick pan, pour a quarter cup of batter per pancake, and cook until bubbles pop on top before flipping to golden perfection.",
+            "For the chocolate sauce, simmer cocoa powder, sugar, milk, and a touch of butter in a saucepan until thick and shiny.",
+            "Stack your pancakes high and drizzle that warm chocolate sauce generously right over the top!"
+        ]
+        additional_tips = [
+            "Be careful not to overmix the batter; small lumps are completely fine and help create a lighter pancake texture.",
+            "Cook over medium-low heat so the center cooks thoroughly without burning the golden exterior."
+        ]
+        search_keys = ["fluffy pancakes stack", "pancake batter skillet", "pouring chocolate syrup", "delicious breakfast pancakes"]
+        hooks = ["The ultimate fluffy pancake and chocolate sauce recipe!", "How to make cafe-style pancakes at home!"]
+        tags = "pancakes recipe, chocolate sauce, fluffy pancakes, breakfast ideas, homemade dessert"
+
+    # 3. General Recipe or Subject Engine
+    else:
+        subject_name = clean_text if clean_text else "this recipe"
+        dish_title = subject_name
+        core_steps = [
+            f"Welcome back everyone! Today, we are taking a complete step-by-step look at how to prepare {subject_name} right in your own kitchen.",
+            f"First, prepare all your essential ingredients and utensils so your cooking station is organized and ready.",
+            f"Step 1: Clean, chop, and measure out your core components before applying heat.",
+            f"Step 2: Heat your cooking pan, add your oil or butter, and sear your primary ingredients to unlock rich flavors.",
+            f"Step 3: Season with your favorite herbs and spices, letting everything simmer together until perfectly cooked.",
+            f"Step 4: Plate your warm {subject_name} neatly, garnish fresh, and serve immediately for maximum flavor!"
+        ]
+        additional_tips = [
+            f"Preheating your pan properly ensures even cooking and prevents sticking during preparation.",
+            f"Always adjust seasonings to taste before serving to get the perfect flavor balance."
+        ]
+        search_keys = [f"{subject_name} ingredients", "cooking skillet food", "delicious meal plating"]
+        hooks = [f"The easiest way to make {subject_name} at home!", f"How to prepare {subject_name} perfectly!"]
+        tags = f"{subject_name}, cooking recipe, easy tutorial, homemade food"
+
+    # Build full script matching target word count without repeating introductory blocks
+    full_script = " ".join(core_steps)
+    words = full_script.split()
+    
+    tip_idx = 0
+    while len(words) < target_word_count:
+        tip = additional_tips[tip_idx % len(additional_tips)]
+        full_script += f" In addition, {tip[0].lower()}{tip[1:]}"
+        words = full_script.split()
+        tip_idx += 1
+
+    return {
+        "script": full_script.strip(),
+        "search_keywords": search_keys,
+        "hooks": hooks,
+        "tags": tags
+    }
 
 # Helper function to fetch guaranteed REAL HD photos
 def fetch_guaranteed_web_photo(keyword, width, height, index=0):
@@ -224,31 +281,11 @@ if generate_btn:
             width, height = (720, 1280) if is_short else (1280, 720)
             target_words = int(duration * 135) if not is_short else int(duration * 60 * 2.2)
             
-            update_progress(5, "📝 Step 1/5: Compiling detailed professional recipe script...")
+            update_progress(5, "📝 Step 1/5: Extracting intent & building dynamic recipe script...")
             
-            base_paragraphs, search_keys, hooks, tags = generate_robust_recipe_script(topic, target_words)
+            data = process_dynamic_intent_universal(topic, target_words)
 
-            custom_script = ""
-            para_idx = 0
-            words_count = 0
-            
-            while words_count < target_words:
-                p = base_paragraphs[para_idx % len(base_paragraphs)]
-                if para_idx >= len(base_paragraphs):
-                    cycle_num = (para_idx // len(base_paragraphs)) + 1
-                    p = f"Furthermore, in part {cycle_num}, " + p[0].lower() + p[1:]
-                custom_script += p + " "
-                words_count = len(custom_script.split())
-                para_idx += 1
-
-            data = {
-                "script": custom_script.strip(),
-                "search_keywords": search_keys,
-                "hooks": hooks,
-                "tags": tags
-            }
-
-            update_progress(20, f"🎙️ Step 2/5: Synthesizing Realistic 3-Minute Human Voice ({selected_voice_code})...")
+            update_progress(20, f"🎙️ Step 2/5: Synthesizing Realistic Human Voice ({selected_voice_code})...")
 
             audio_raw = "raw_human_voice.mp3"
             audio_final = "final_voice.mp3"
@@ -285,7 +322,7 @@ if generate_btn:
                     custom_video_used = True
 
             if not custom_video_used:
-                keywords = data.get("search_keywords", ["fluffy pancakes stack", "chocolate syrup"])
+                keywords = data.get("search_keywords", ["roasted peanuts bowl", "smooth peanut butter jar"])
                 for idx, kw in enumerate(keywords):
                     img = fetch_guaranteed_web_photo(kw, width, height, index=idx)
                     if img:
@@ -293,7 +330,7 @@ if generate_btn:
                         
             if not custom_video_used and len(scene_images) == 0:
                 for idx in range(6):
-                    img = fetch_guaranteed_web_photo("pancakes", width, height, index=idx)
+                    img = fetch_guaranteed_web_photo("peanut butter", width, height, index=idx)
                     if img:
                         scene_images.append(img)
 
