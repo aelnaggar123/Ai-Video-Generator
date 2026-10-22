@@ -16,13 +16,11 @@ from io import BytesIO
 st.set_page_config(page_title="A & W AI Video Creation Tool", page_icon="🎬", layout="wide")
 
 st.title("🎬 A & W AI Video Creation Tool")
-st.caption("Professional AI Video Studio: Made by Eng. Ahmed El Naggar and his Sem Sem ❤️ | Guaranteed HD Recipe Photos & Smart Intent Engine.")
+st.markdown("---")
 
 # Initialize Session State
 if "generated_data" not in st.session_state:
     st.session_state.generated_data = None
-
-st.markdown("---")
 
 # Dashboard Controls
 col_top1, col_top2 = st.columns([2, 1])
@@ -31,11 +29,11 @@ with col_top1:
     topic = st.text_input(
         "💡 What is your video about?", 
         value="",
-        placeholder="Type naturally (e.g. how to make penut butter at home, koshary, etc.)..."
+        placeholder="Type naturally in Franco, Arabic, or English (e.g. project controls, python automation, recipe, etc.)..."
     )
     style = st.selectbox(
         "🎭 Tone & Style:",
-        ["Informative & Engaging", "Excited & Joyful", "Storytelling & Inspiring", "Casual & Friendly"]
+        ["Informative & Engaging", "Excited & Joyful", "Storytelling & Inspiring", "Professional & Corporate", "Casual & Friendly"]
     )
 
 with col_top2:
@@ -87,114 +85,63 @@ with col_action2:
         st.session_state.generated_data = None
         st.rerun()
 
-# Universal Smart Intent & Dynamic Recipe Engine
-def process_dynamic_intent_universal(user_input, target_word_count):
-    raw = user_input.strip().lower()
+# Universal Dynamic Engine for ANY Topic (Engineering, Tech, Food, Business, Science)
+def process_universal_content_engine(user_input, target_word_count):
+    raw = user_input.strip()
 
     # Clean action words & Franco prefixes
-    clean_text = raw
+    clean_topic = raw
     prefixes = [
-        "how to make", "how to prepare", "e3mely", "e3mly", "y3lemny", "tare2et", "3amal", "3ayez", "3ayz", 
-        "video about", "at home", "fl beat", "fl bet", "اعملي", "طريقة", "عمل", "في البيت"
+        "how to make", "how to prepare", "how to", "e3mely", "e3mly", "y3lemny", "tare2et", "3amal", "3ayez", "3ayz", 
+        "video about", "shra7", "shrah", "explain", "at home", "fl beat", "fl bet", "اعملي", "شرح", "طريقة", "عمل", "في البيت"
     ]
     for p in prefixes:
-        clean_text = re.sub(rf"(?i)\b{re.escape(p)}\b", "", clean_text)
-    clean_text = clean_text.strip()
+        clean_topic = re.sub(rf"(?i)\b{re.escape(p)}\b", "", clean_topic)
+    clean_topic = clean_topic.strip()
+    if not clean_topic:
+        clean_topic = raw
 
-    # Typo correction dictionary for food terms
-    corrections = {
-        "penut": "peanut",
-        "peanut butter": "peanut butter",
-        "pancake": "pancakes",
-        "panckae": "pancakes",
-        "cholate": "chocolate",
-        "suace": "sauce",
-        "gebna": "cheese",
-        "bead": "eggs",
-        "beed": "eggs"
-    }
-    for typo, correct in corrections.items():
-        if typo in clean_text:
-            clean_text = clean_text.replace(typo, correct)
+    # Generate custom topic-driven structured core paragraphs
+    core_paragraphs = [
+        f"Welcome back everyone! Today, we are exploring an essential and comprehensive breakdown of {clean_topic}.",
+        f"Whether you are looking to master the fundamentals or advance your practical skills in {clean_topic}, understanding the core mechanics is key.",
+        f"Phase 1: Let's examine the foundational principles, setup requirements, and key variables needed to approach {clean_topic} effectively.",
+        f"Phase 2: When working through the process, pay close attention to structural planning, organization, and precision to avoid common pitfalls.",
+        f"Phase 3: Analyzing real-world applications and workflows allows us to optimize performance, save time, and achieve professional results.",
+        f"Phase 4: Reviewing final execution, verifying outputs, and maintaining high standards ensures long-term success.",
+        f"Apply these practical concepts directly to your work, and let us know your thoughts, questions, or results in the comments below!"
+    ]
+    
+    extension_tips = [
+        f"Consistency and attention to detail remain the most critical factors when executing {clean_topic}.",
+        f"Breaking complex tasks down into smaller, manageable milestones significantly improves overall efficiency.",
+        f"Always evaluate your progress periodically against your initial targets to maintain absolute control over the workflow.",
+        f"Leveraging modern tools and structured methodologies can streamline every single phase of {clean_topic}."
+    ]
 
-    # 1. Peanut Butter Intent
-    if "peanut" in clean_text or "فول سوداني" in clean_text or "زبدة" in clean_text:
-        dish_title = "creamy homemade peanut butter"
-        core_steps = [
-            "Welcome back! Today, I will show you how to make fresh, healthy, and super creamy peanut butter right at home with just a few simple ingredients.",
-            "All you need is two cups of dry roasted unsalted peanuts, a pinch of sea salt, and optionally a tablespoon of honey or a splash of peanut oil for extra smoothness.",
-            "Step 1: Roast your peanuts in a preheated oven at 180 degrees Celsius for about 5 to 8 minutes until warm and fragrant. This helps release their natural oils.",
-            "Step 2: Transfer the warm roasted peanuts into a high-speed food processor or heavy-duty blender.",
-            "Step 3: Pulse the peanuts initially until they break down into a coarse meal or fine crumbles.",
-            "Step 4: Keep processing! The peanuts will go from a dry powder to a thick clump, and finally into a smooth, glossy, liquid peanut butter as the natural oils release.",
-            "Step 5: Scrape down the sides of the food processor as needed, then add a pinch of salt and a tablespoon of honey if you prefer a touch of sweetness.",
-            "Step 6: Blend for one final minute until velvety smooth, or leave a few crunchy peanut bits if you love crunchy peanut butter.",
-            "Pour your fresh homemade peanut butter into a clean glass jar, seal it tightly, and store it in the pantry or fridge. Enjoy it on toast, with apples, or in your favorite smoothies!"
-        ]
-        additional_tips = [
-            "Remember that warm peanuts blend much faster than cold ones because the natural fats liquefy easily under friction.",
-            "If your blender struggles during the thick phase, simply add a teaspoon of neutral oil or vegetable oil to help loosen the mixture.",
-            "Homemade peanut butter contains zero artificial preservatives or palm oil, making it far healthier and tastier than store-bought brands.",
-            "Store your sealed jar in the refrigerator to keep the natural peanut oils fresh and prevent separation over time."
-        ]
-        # Ultra-targeted precise single-word tags for 100% accurate image fetching
-        search_keys = ["peanuts", "peanutbutter", "blender", "jar", "toast", "food"]
-        hooks = [
-            "The secret to perfect homemade peanut butter in 5 minutes!",
-            "Stop buying store-bought! Make healthy peanut butter at home!",
-            "How to make super creamy peanut butter with just peanuts and salt!"
-        ]
-        tags = "homemade peanut butter, peanut butter recipe, healthy spread, easy blender recipe, fresh peanuts, healthy breakfast"
-
-    # 2. Pancakes & Chocolate Sauce Intent
-    elif "pancake" in clean_text or "بان كيك" in clean_text:
-        dish_title = "fluffy pancakes with glossy chocolate sauce"
-        core_steps = [
-            "Welcome back! Today, we are making the fluffiest homemade pancakes served with a rich, glossy chocolate sauce from scratch.",
-            "For the batter, you'll need flour, sugar, baking powder, a pinch of salt, an egg, milk, and melted butter.",
-            "Whisk your dry ingredients in a bowl, combine wet ingredients separately, then gently fold them together until just combined.",
-            "Heat a non-stick pan, pour a quarter cup of batter per pancake, and cook until bubbles pop on top before flipping to golden perfection.",
-            "For the chocolate sauce, simmer cocoa powder, sugar, milk, and a touch of butter in a saucepan until thick and shiny.",
-            "Stack your pancakes high and drizzle that warm chocolate sauce generously right over the top!"
-        ]
-        additional_tips = [
-            "Be careful not to overmix the batter; small lumps are completely fine and help create a lighter pancake texture.",
-            "Cook over medium-low heat so the center cooks thoroughly without burning the golden exterior."
-        ]
-        search_keys = ["pancakes", "chocolate", "batter", "breakfast", "syrup"]
-        hooks = ["The ultimate fluffy pancake and chocolate sauce recipe!", "How to make cafe-style pancakes at home!"]
-        tags = "pancakes recipe, chocolate sauce, fluffy pancakes, breakfast ideas, homemade dessert"
-
-    # 3. General Recipe or Subject Engine
-    else:
-        subject_name = clean_text if clean_text else "food"
-        dish_title = subject_name
-        core_steps = [
-            f"Welcome back everyone! Today, we are taking a complete step-by-step look at how to prepare {subject_name} right in your own kitchen.",
-            f"First, prepare all your essential ingredients and utensils so your cooking station is organized and ready.",
-            f"Step 1: Clean, chop, and measure out your core components before applying heat.",
-            f"Step 2: Heat your cooking pan, add your oil or butter, and sear your primary ingredients to unlock rich flavors.",
-            f"Step 3: Season with your favorite herbs and spices, letting everything simmer together until perfectly cooked.",
-            f"Step 4: Plate your warm {subject_name} neatly, garnish fresh, and serve immediately for maximum flavor!"
-        ]
-        additional_tips = [
-            f"Preheating your pan properly ensures even cooking and prevents sticking during preparation.",
-            f"Always adjust seasonings to taste before serving to get the perfect flavor balance."
-        ]
-        search_keys = ["cooking", "ingredients", "meal", "kitchen", "food"]
-        hooks = [f"The easiest way to make {subject_name} at home!", f"How to prepare {subject_name} perfectly!"]
-        tags = f"{subject_name}, cooking recipe, easy tutorial, homemade food"
-
-    # Build full script matching target word count without repeating introductory blocks
-    full_script = " ".join(core_steps)
+    # Build full script matching target word count smoothly
+    full_script = " ".join(core_paragraphs)
     words = full_script.split()
     
     tip_idx = 0
     while len(words) < target_word_count:
-        tip = additional_tips[tip_idx % len(additional_tips)]
-        full_script += f" In addition, {tip[0].lower()}{tip[1:]}"
+        tip = extension_tips[tip_idx % len(extension_tips)]
+        full_script += f" Furthermore, {tip[0].lower()}{tip[1:]}"
         words = full_script.split()
         tip_idx += 1
+
+    # Extract clean keywords for image fetching based on topic words
+    words_list = [w for w in re.findall(r'\b[a-zA-Z]{4,}\b', clean_topic.lower())]
+    if not words_list:
+        words_list = ["technology", "business", "workspace", "planning"]
+
+    search_keys = words_list[:3] + ["workspace", "professional", "strategy"]
+    hooks = [
+        f"Master {clean_topic} in simple, structured steps!",
+        f"Everything you need to know about professional {clean_topic}!",
+        f"The ultimate guide to succeeding with {clean_topic}!"
+    ]
+    tags = f"{clean_topic}, professional guide, tutorial, workflow, strategy, masterclass, expert tips"
 
     return {
         "script": full_script.strip(),
@@ -203,11 +150,10 @@ def process_dynamic_intent_universal(user_input, target_word_count):
         "tags": tags
     }
 
-# Advanced Guaranteed HD Photo Fetcher with High Relevance
+# Advanced Guaranteed HD Photo Fetcher
 def fetch_guaranteed_web_photo(keyword, width, height, index=0):
     clean_kw = keyword.strip().replace(" ", "").lower()
     
-    # Provider 1: Unsplash Source (Ultra Reliable for Specific Food)
     try:
         url_unsplash = f"https://source.unsplash.com/featured/{width}x{height}/?{clean_kw}&sig={index + 5}"
         res = requests.get(url_unsplash, timeout=6)
@@ -216,7 +162,6 @@ def fetch_guaranteed_web_photo(keyword, width, height, index=0):
     except:
         pass
 
-    # Provider 2: LoremFlickr (Clean Keyword Lock)
     try:
         url_flickr = f"https://loremflickr.com/{width}/{height}/{clean_kw}?lock={index + 10}"
         headers = {"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64)"}
@@ -226,7 +171,6 @@ def fetch_guaranteed_web_photo(keyword, width, height, index=0):
     except:
         pass
 
-    # Provider 3: Picsum Seed
     try:
         url_picsum = f"https://picsum.photos/seed/{clean_kw}{index}/{width}/{height}"
         res_pic = requests.get(url_picsum, timeout=6)
@@ -237,7 +181,6 @@ def fetch_guaranteed_web_photo(keyword, width, height, index=0):
 
     return None
 
-# Helper to fetch non-copyrighted background music
 def fetch_royalty_free_music(output_path):
     safe_audio_urls = [
         "https://cdn.pixabay.com/download/audio/2022/05/27/audio_1808fbf07a.mp3",
@@ -255,7 +198,6 @@ def fetch_royalty_free_music(output_path):
             continue
     return False
 
-# Helper to split text into short readable subtitle chunks
 def split_script_into_chunks(script_text, max_words=4):
     words = script_text.split()
     chunks = []
@@ -269,7 +211,6 @@ def split_script_into_chunks(script_text, max_words=4):
         chunks.append(" ".join(current_chunk))
     return chunks
 
-# Async Generator for Edge Realistic Human Voice
 async def generate_human_voice(text, voice_code, output_file):
     communicate = edge_tts.Communicate(text, voice_code)
     await communicate.save(output_file)
@@ -294,9 +235,9 @@ if generate_btn:
             width, height = (720, 1280) if is_short else (1280, 720)
             target_words = int(duration * 135) if not is_short else int(duration * 60 * 2.2)
             
-            update_progress(5, "📝 Step 1/5: Extracting intent & building dynamic recipe script...")
+            update_progress(5, "📝 Step 1/5: Processing topic intent & building structured script...")
             
-            data = process_dynamic_intent_universal(topic, target_words)
+            data = process_universal_content_engine(topic, target_words)
 
             update_progress(20, f"🎙️ Step 2/5: Synthesizing Realistic Human Voice ({selected_voice_code})...")
 
@@ -311,7 +252,7 @@ if generate_btn:
             probe_cmd = f"ffprobe -v error -show_entries format=duration -of default=noprint_wrappers=1:nokey=1 {audio_final}"
             final_audio_dur = float(subprocess.check_output(probe_cmd, shell=True).decode('utf-8').strip())
             
-            update_progress(35, "🌐 Step 3/5: Downloading HD photos matching recipe steps...")
+            update_progress(35, "🌐 Step 3/5: Downloading HD visual assets matching your topic...")
 
             fps = 24
             total_frames = int(fps * final_audio_dur)
@@ -335,7 +276,7 @@ if generate_btn:
                     custom_video_used = True
 
             if not custom_video_used:
-                keywords = data.get("search_keywords", ["peanuts", "peanutbutter", "food"])
+                keywords = data.get("search_keywords", ["technology", "business", "workspace"])
                 for idx, kw in enumerate(keywords):
                     img = fetch_guaranteed_web_photo(kw, width, height, index=idx)
                     if img:
@@ -343,7 +284,7 @@ if generate_btn:
                         
             if not custom_video_used and len(scene_images) == 0:
                 for idx in range(6):
-                    img = fetch_guaranteed_web_photo("food", width, height, index=idx)
+                    img = fetch_guaranteed_web_photo("workspace", width, height, index=idx)
                     if img:
                         scene_images.append(img)
 
