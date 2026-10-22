@@ -16,6 +16,8 @@ from io import BytesIO
 st.set_page_config(page_title="A & W AI Video Creation Tool", page_icon="🎬", layout="wide")
 
 st.title("🎬 A & W AI Video Creation Tool")
+st.caption("Professional AI Video Studio: Made by Eng. Ahmed El Naggar and his Sem Sem ❤️")
+
 st.markdown("---")
 
 # Initialize Session State
@@ -89,7 +91,6 @@ with col_action2:
 def process_universal_content_engine(user_input, target_word_count):
     raw = user_input.strip()
 
-    # Clean action words & Franco prefixes
     clean_topic = raw
     prefixes = [
         "how to make", "how to prepare", "how to", "e3mely", "e3mly", "y3lemny", "tare2et", "3amal", "3ayez", "3ayz", 
@@ -101,7 +102,6 @@ def process_universal_content_engine(user_input, target_word_count):
     if not clean_topic:
         clean_topic = raw
 
-    # Generate custom topic-driven structured core paragraphs
     core_paragraphs = [
         f"Welcome back everyone! Today, we are exploring an essential and comprehensive breakdown of {clean_topic}.",
         f"Whether you are looking to master the fundamentals or advance your practical skills in {clean_topic}, understanding the core mechanics is key.",
@@ -119,7 +119,6 @@ def process_universal_content_engine(user_input, target_word_count):
         f"Leveraging modern tools and structured methodologies can streamline every single phase of {clean_topic}."
     ]
 
-    # Build full script matching target word count smoothly
     full_script = " ".join(core_paragraphs)
     words = full_script.split()
     
@@ -130,7 +129,6 @@ def process_universal_content_engine(user_input, target_word_count):
         words = full_script.split()
         tip_idx += 1
 
-    # Extract clean keywords for image fetching based on topic words
     words_list = [w for w in re.findall(r'\b[a-zA-Z]{4,}\b', clean_topic.lower())]
     if not words_list:
         words_list = ["technology", "business", "workspace", "planning"]
@@ -150,7 +148,6 @@ def process_universal_content_engine(user_input, target_word_count):
         "tags": tags
     }
 
-# Advanced Guaranteed HD Photo Fetcher
 def fetch_guaranteed_web_photo(keyword, width, height, index=0):
     clean_kw = keyword.strip().replace(" ", "").lower()
     
