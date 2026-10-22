@@ -16,7 +16,7 @@ from io import BytesIO
 st.set_page_config(page_title="A & W AI Video Creation Tool", page_icon="🎬", layout="wide")
 
 st.title("🎬 A & W AI Video Creation Tool")
-st.caption("Professional AI Video Studio: Made by Eng. Ahmed El Naggar and his Sem Sem ❤️ | Smart Local Recipe & Content Engine.")
+st.caption("Professional AI Video Studio: Made by Eng. Ahmed El Naggar and his Sem Sem ❤️ | True Smart Recipe & Dynamic Generator.")
 
 # Initialize Session State
 if "generated_data" not in st.session_state:
@@ -31,7 +31,7 @@ with col_top1:
     topic = st.text_input(
         "💡 What is your video about?", 
         value="",
-        placeholder="Type naturally in Franco, Arabic, or English (e.g. tare2et 3amal el bead bl gebna)..."
+        placeholder="Type naturally (e.g. tare2et 3amal el kofta, koshari, or any topic)..."
     )
     style = st.selectbox(
         "🎭 Tone & Style:",
@@ -87,8 +87,8 @@ with col_action2:
         st.session_state.generated_data = None
         st.rerun()
 
-# Advanced Local Intent & Smart Recipe Parser (No External Failures)
-def process_local_intent(raw_text):
+# Fully Dynamic Smart Intent & Step-by-Step Recipe Builder
+def process_dynamic_intent(raw_text):
     text = raw_text.strip().lower()
 
     # Clean command prefixes
@@ -97,24 +97,39 @@ def process_local_intent(raw_text):
 
     text_clean = text.strip()
 
+    # Check for Kofta / Meatballs
+    if any(w in text_clean for w in ["kofta", "kofta", "كفتة", "كفته"]):
+        base_paragraphs = [
+            "Today, I am going to show you step by step how to make juicy, perfectly seasoned homemade kofta right in your own kitchen!",
+            "First, let's look at the essential ingredients you will need: 500 grams of minced beef or lamb, one finely grated onion, a handful of fresh parsley, salt, black pepper, and mixed spices.",
+            "Step two: In a large mixing bowl, combine your minced meat, the squeezed onion pulp, fresh chopped parsley, and all your spices together.",
+            "Step three: Knead the meat mixture thoroughly with your hands for at least five minutes until all the flavors blend and the meat becomes sticky and cohesive.",
+            "Step four: Take handfuls of the meat mixture and mold them evenly around wooden skewers or shape them into neat oblong fingers.",
+            "Step five: Preheat your grill or pan, lightly brush with oil, and cook the kofta skewers for about 8 to 10 minutes, turning frequently until nicely charred and juicy on the inside.",
+            "Step six: Serve your hot, smoky homemade kofta immediately with fresh flatbread, tahini sauce, and chopped parsley. Enjoy!"
+        ]
+        search_keys = ["raw minced meat onions", "mixing meat spices bowl", "shaping kofta skewers", "grilling kofta on charcoal", "cooked juicy kofta plate"]
+        hooks = [
+            "The ultimate secret to juicy homemade kofta!",
+            "How to make restaurant-style kofta at home step by step!",
+            "You need to try this amazing homemade kofta recipe!"
+        ]
+        seo_tags = "homemade kofta, kofta recipe, grilled kofta, juicy meat skewers, middle eastern food, cooking at home, easy recipe, kofta tutorial, delicious meat dishes"
+        return base_paragraphs, search_keys, hooks, seo_tags
+
     # Check for Eggs & Cheese (Bead & Gebna)
-    if any(w in text_clean for w in ["bead", "beed", "egg", "eggs", "بيض", "بيح"]) or any(w in text_clean for w in ["gebna", "cheese", "جبنة", "جبنه"]):
+    if any(w in text_clean for w in ["bead", "beed", "egg", "eggs", "بيض"]) or any(w in text_clean for w in ["gebna", "cheese", "جبنة"]):
         base_paragraphs = [
             "Today, I am going to show you how to make the fluffiest and most delicious cheesy scrambled eggs right at home!",
-            "First, gather your fresh ingredients: two or three farm-fresh eggs, a splash of milk, a knob of butter, salt, black pepper, and your favorite shredded cheese.",
-            "Crack the eggs into a bowl, add a splash of milk, and whisk them thoroughly until they are light, airy, and well combined.",
-            "Heat a non-stick pan over medium-low heat and melt your butter until it coats the bottom nicely.",
-            "Pour the egg mixture into the warm pan and let it set for a few seconds before gently stirring with a spatula to create soft, creamy curds.",
-            "Just before the eggs are fully cooked, sprinkle a generous amount of shredded cheese right on top so it melts into gooey perfection.",
-            "Plate your cheesy eggs immediately while hot, garnish with a pinch of fresh herbs or black pepper, and enjoy the ultimate comfort breakfast!"
+            "First, gather your fresh ingredients: farm-fresh eggs, a splash of milk, butter, salt, pepper, and shredded cheese.",
+            "Crack the eggs into a bowl, add milk, and whisk them thoroughly until light and airy.",
+            "Melt butter in a non-stick pan over medium heat, then pour in the egg mixture.",
+            "Gently stir with a spatula to create soft curds, and sprinkle generous cheese right on top to melt.",
+            "Serve hot and enjoy your ultimate comfort breakfast!"
         ]
-        search_keys = ["fluffy scrambled eggs", "melted cheese on eggs", "cooking eggs in skillet", "breakfast cheesy eggs", "butter melting in pan"]
-        hooks = [
-            "The secret to the fluffiest cheesy eggs at home!",
-            "How to make restaurant-style eggs with melted cheese!",
-            "You need to try this amazing egg and cheese recipe!"
-        ]
-        seo_tags = "cheesy eggs, scrambled eggs recipe, breakfast ideas, eggs with cheese, easy cooking at home, cooking tutorial, fluffy eggs, delicious breakfast"
+        search_keys = ["fluffy scrambled eggs", "melted cheese on eggs", "cooking eggs in skillet", "breakfast cheesy eggs"]
+        hooks = ["The secret to fluffiest cheesy eggs!", "How to make restaurant-style cheesy eggs!"]
+        seo_tags = "cheesy eggs, scrambled eggs recipe, breakfast ideas, eggs with cheese, easy cooking"
         return base_paragraphs, search_keys, hooks, seo_tags
 
     # Check for Burger
@@ -122,14 +137,12 @@ def process_local_intent(raw_text):
         base_paragraphs = [
             "Today, we are making the ultimate juicy homemade beef burger with melted cheese and a fried egg!",
             "You will need fresh ground beef patties, burger buns, cheddar cheese slices, eggs, lettuce, and tomatoes.",
-            "Season your beef patties with salt and pepper, then grill or pan-sear them until juicy and golden brown.",
-            "Melt a slice of cheddar cheese directly on top of the hot patty, and fry a fresh egg sunny-side up in a separate skillet.",
-            "Assemble your burger by layering sauce, lettuce, the cheesy beef patty, and top it with the golden fried egg.",
-            "Press gently and take a bite of pure homemade perfection!"
+            "Season your beef patties, grill or pan-sear them until juicy and golden brown.",
+            "Melt cheddar cheese on top, fry an egg, and assemble your gourmet burger with fresh veggies and sauce."
         ]
         search_keys = ["juicy beef burger", "melted cheese burger", "fried egg on burger", "cooking burger skillet"]
         hooks = ["The ultimate homemade burger recipe!", "How to make gourmet burgers at home!"]
-        seo_tags = "homemade burger, egg and cheese burger, juicy beef burger, gourmet burger recipe, easy cooking"
+        seo_tags = "homemade burger, egg and cheese burger, juicy beef burger, gourmet recipe"
         return base_paragraphs, search_keys, hooks, seo_tags
 
     # Check for Cake & Chocolate
@@ -137,26 +150,25 @@ def process_local_intent(raw_text):
         base_paragraphs = [
             "Today, I'm going to show you how to bake a rich and moist homemade chocolate cake in your own kitchen!",
             "You will need eggs, sugar, flour, cocoa powder, milk, butter, and baking powder.",
-            "Whisk your dry ingredients together, then blend the wet ingredients separately before combining them into a smooth batter.",
-            "Pour into a greased pan and bake at 180 degrees Celsius for 30 minutes until fluffy and delicious."
+            "Whisk dry ingredients, blend wet ingredients separately, combine into a smooth batter, and bake at 180C for 30 minutes."
         ]
         search_keys = ["chocolate cake", "baking ingredients", "mixing bowl cocoa", "oven baking cake"]
-        hooks = ["The ultimate homemade chocolate cake recipe!", "How to bake a rich chocolate cake easily!"]
-        seo_tags = "homemade chocolate cake, chocolate cake recipe, baking at home, easy dessert recipe"
+        hooks = ["The ultimate homemade chocolate cake recipe!", "How to bake a rich chocolate cake!"]
+        seo_tags = "chocolate cake recipe, baking at home, easy dessert recipe, moist cake"
         return base_paragraphs, search_keys, hooks, seo_tags
 
-    # Default fallback for any other topic
+    # Dynamic fallback for any other custom topic
     clean_words = [w for w in re.findall(r'\b[a-zA-Z]{3,}\b', text_clean)]
-    subject = " ".join(clean_words[:3]) if clean_words else "this amazing topic"
+    subject = " ".join(clean_words[:3]) if clean_words else "this topic"
 
     base_paragraphs = [
-        f"Today we are exploring everything you need to know about {subject}.",
-        "We will break down the core steps and essential details to give you a complete, clear understanding.",
-        "Follow along as we examine each part of the process from start to finish.",
-        "Apply these practical tips yourself and share your feedback in the comments below!"
+        f"Welcome! Today we are covering a complete step-by-step guide on {subject}.",
+        f"First, let's understand the core concept and what you need to get started with {subject}.",
+        f"Next, we will walk through the main implementation phases clearly and thoroughly.",
+        f"Finally, review your results, apply these expert tips, and let us know your feedback below!"
     ]
-    search_keys = [subject, "practical guide", "step by step"]
-    hooks = [f"Everything you need to know about {subject}!", f"The complete guide to {subject}!"]
+    search_keys = [subject, "step by step guide", "tutorial presentation"]
+    hooks = [f"Complete step-by-step guide to {subject}!", f"How to master {subject} easily!"]
     seo_tags = f"{subject}, tutorial, guide, step by step, how to, viral video"
     return base_paragraphs, search_keys, hooks, seo_tags
 
@@ -238,9 +250,9 @@ if generate_btn:
             width, height = (720, 1280) if is_short else (1280, 720)
             target_words = int(duration * 135) if not is_short else int(duration * 60 * 2.2)
             
-            update_progress(10, "📝 Step 1/5: Smart Local Engine processing your recipe intent...")
+            update_progress(10, "📝 Step 1/5: Smart Dynamic Engine building recipe script & steps...")
             
-            base_paragraphs, search_keys, hooks, seo_tags = process_local_intent(topic)
+            base_paragraphs, search_keys, hooks, seo_tags = process_dynamic_intent(topic)
 
             custom_script = ""
             para_idx = 0
@@ -250,7 +262,7 @@ if generate_btn:
                 current_p = base_paragraphs[para_idx % len(base_paragraphs)]
                 if para_idx >= len(base_paragraphs):
                     cycle_num = (para_idx // len(base_paragraphs)) + 1
-                    current_p = f"Furthermore, in step {cycle_num}, " + current_p[0].lower() + current_p[1:]
+                    current_p = f"Moving forward to next phase {cycle_num}, " + current_p[0].lower() + current_p[1:]
                 
                 custom_script += current_p + " "
                 words_count = len(custom_script.split())
@@ -277,7 +289,7 @@ if generate_btn:
             probe_cmd = f"ffprobe -v error -show_entries format=duration -of default=noprint_wrappers=1:nokey=1 {audio_final}"
             final_audio_dur = float(subprocess.check_output(probe_cmd, shell=True).decode('utf-8').strip())
             
-            update_progress(45, "🌐 Step 3/5: Downloading real HD photos matching topic...")
+            update_progress(45, "🌐 Step 3/5: Downloading real HD photos matching ingredients & steps...")
 
             fps = 24
             total_frames = int(fps * final_audio_dur)
@@ -301,7 +313,7 @@ if generate_btn:
                     custom_video_used = True
 
             if not custom_video_used:
-                keywords = data.get("search_keywords", ["fluffy scrambled eggs", "melted cheese on eggs"])
+                keywords = data.get("search_keywords", ["raw minced meat", "cooking food"])
                 for idx, kw in enumerate(keywords):
                     img = fetch_guaranteed_web_photo(kw, width, height, index=idx)
                     if img:
@@ -309,11 +321,11 @@ if generate_btn:
                         
             if not custom_video_used and len(scene_images) == 0:
                 for idx in range(6):
-                    img = fetch_guaranteed_web_photo("fluffy scrambled eggs", width, height, index=idx)
+                    img = fetch_guaranteed_web_photo("cooking food", width, height, index=idx)
                     if img:
                         scene_images.append(img)
 
-            update_progress(65, "🎵 Step 4/5: Mixing royalty-free background music...")
+            update_progress(65, "🎵 Step 4/5: Mixing engaging background music...")
             
             voice_to_use = audio_final
             if enable_bg_music:
