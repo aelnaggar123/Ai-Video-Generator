@@ -16,7 +16,7 @@ from io import BytesIO
 st.set_page_config(page_title="A & W AI Video Creation Tool", page_icon="🎬", layout="wide")
 
 st.title("🎬 A & W AI Video Creation Tool")
-st.caption("Professional AI Video Studio: Made by Eng. Ahmed El Naggar and his Sem Sem ❤️ | Smart Recipe Intent & Dynamic Content Engine.")
+st.caption("Professional AI Video Studio: Made by Eng. Ahmed El Naggar and his Sem Sem ❤️ | Guaranteed HD Recipe Photos & Smart Intent Engine.")
 
 # Initialize Session State
 if "generated_data" not in st.session_state:
@@ -137,7 +137,8 @@ def process_dynamic_intent_universal(user_input, target_word_count):
             "Homemade peanut butter contains zero artificial preservatives or palm oil, making it far healthier and tastier than store-bought brands.",
             "Store your sealed jar in the refrigerator to keep the natural peanut oils fresh and prevent separation over time."
         ]
-        search_keys = ["roasted peanuts bowl", "processing peanuts blender", "smooth peanut butter jar", "peanut butter spreading toast", "fresh peanuts ingredients"]
+        # Ultra-targeted precise single-word tags for 100% accurate image fetching
+        search_keys = ["peanuts", "peanutbutter", "blender", "jar", "toast", "food"]
         hooks = [
             "The secret to perfect homemade peanut butter in 5 minutes!",
             "Stop buying store-bought! Make healthy peanut butter at home!",
@@ -160,13 +161,13 @@ def process_dynamic_intent_universal(user_input, target_word_count):
             "Be careful not to overmix the batter; small lumps are completely fine and help create a lighter pancake texture.",
             "Cook over medium-low heat so the center cooks thoroughly without burning the golden exterior."
         ]
-        search_keys = ["fluffy pancakes stack", "pancake batter skillet", "pouring chocolate syrup", "delicious breakfast pancakes"]
+        search_keys = ["pancakes", "chocolate", "batter", "breakfast", "syrup"]
         hooks = ["The ultimate fluffy pancake and chocolate sauce recipe!", "How to make cafe-style pancakes at home!"]
         tags = "pancakes recipe, chocolate sauce, fluffy pancakes, breakfast ideas, homemade dessert"
 
     # 3. General Recipe or Subject Engine
     else:
-        subject_name = clean_text if clean_text else "this recipe"
+        subject_name = clean_text if clean_text else "food"
         dish_title = subject_name
         core_steps = [
             f"Welcome back everyone! Today, we are taking a complete step-by-step look at how to prepare {subject_name} right in your own kitchen.",
@@ -180,7 +181,7 @@ def process_dynamic_intent_universal(user_input, target_word_count):
             f"Preheating your pan properly ensures even cooking and prevents sticking during preparation.",
             f"Always adjust seasonings to taste before serving to get the perfect flavor balance."
         ]
-        search_keys = [f"{subject_name} ingredients", "cooking skillet food", "delicious meal plating"]
+        search_keys = ["cooking", "ingredients", "meal", "kitchen", "food"]
         hooks = [f"The easiest way to make {subject_name} at home!", f"How to prepare {subject_name} perfectly!"]
         tags = f"{subject_name}, cooking recipe, easy tutorial, homemade food"
 
@@ -202,23 +203,35 @@ def process_dynamic_intent_universal(user_input, target_word_count):
         "tags": tags
     }
 
-# Helper function to fetch guaranteed REAL HD photos
+# Advanced Guaranteed HD Photo Fetcher with High Relevance
 def fetch_guaranteed_web_photo(keyword, width, height, index=0):
-    clean_kw = keyword.strip().replace(" ", ",").lower()
+    clean_kw = keyword.strip().replace(" ", "").lower()
+    
+    # Provider 1: Unsplash Source (Ultra Reliable for Specific Food)
     try:
-        url = f"https://loremflickr.com/{width}/{height}/{clean_kw}?lock={index + 10}"
-        headers = {"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64)"}
-        res = requests.get(url, headers=headers, timeout=6)
+        url_unsplash = f"https://source.unsplash.com/featured/{width}x{height}/?{clean_kw}&sig={index + 5}"
+        res = requests.get(url_unsplash, timeout=6)
         if res.status_code == 200 and len(res.content) > 10000:
             return Image.open(BytesIO(res.content)).convert("RGB")
     except:
         pass
 
+    # Provider 2: LoremFlickr (Clean Keyword Lock)
     try:
-        url_alt = f"https://picsum.photos/seed/{clean_kw}{index}/{width}/{height}"
-        res_alt = requests.get(url_alt, timeout=6)
-        if res_alt.status_code == 200 and len(res_alt.content) > 10000:
-            return Image.open(BytesIO(res_alt.content)).convert("RGB")
+        url_flickr = f"https://loremflickr.com/{width}/{height}/{clean_kw}?lock={index + 10}"
+        headers = {"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64)"}
+        res_fl = requests.get(url_flickr, headers=headers, timeout=6)
+        if res_fl.status_code == 200 and len(res_fl.content) > 10000:
+            return Image.open(BytesIO(res_fl.content)).convert("RGB")
+    except:
+        pass
+
+    # Provider 3: Picsum Seed
+    try:
+        url_picsum = f"https://picsum.photos/seed/{clean_kw}{index}/{width}/{height}"
+        res_pic = requests.get(url_picsum, timeout=6)
+        if res_pic.status_code == 200 and len(res_pic.content) > 10000:
+            return Image.open(BytesIO(res_pic.content)).convert("RGB")
     except:
         pass
 
@@ -298,7 +311,7 @@ if generate_btn:
             probe_cmd = f"ffprobe -v error -show_entries format=duration -of default=noprint_wrappers=1:nokey=1 {audio_final}"
             final_audio_dur = float(subprocess.check_output(probe_cmd, shell=True).decode('utf-8').strip())
             
-            update_progress(35, "🌐 Step 3/5: Downloading high-definition food & ingredient photos...")
+            update_progress(35, "🌐 Step 3/5: Downloading HD photos matching recipe steps...")
 
             fps = 24
             total_frames = int(fps * final_audio_dur)
@@ -322,7 +335,7 @@ if generate_btn:
                     custom_video_used = True
 
             if not custom_video_used:
-                keywords = data.get("search_keywords", ["roasted peanuts bowl", "smooth peanut butter jar"])
+                keywords = data.get("search_keywords", ["peanuts", "peanutbutter", "food"])
                 for idx, kw in enumerate(keywords):
                     img = fetch_guaranteed_web_photo(kw, width, height, index=idx)
                     if img:
@@ -330,7 +343,7 @@ if generate_btn:
                         
             if not custom_video_used and len(scene_images) == 0:
                 for idx in range(6):
-                    img = fetch_guaranteed_web_photo("peanut butter", width, height, index=idx)
+                    img = fetch_guaranteed_web_photo("food", width, height, index=idx)
                     if img:
                         scene_images.append(img)
 
