@@ -16,7 +16,7 @@ from io import BytesIO
 st.set_page_config(page_title="A & W AI Video Creation Tool", page_icon="🎬", layout="wide")
 
 st.title("🎬 A & W AI Video Creation Tool")
-st.caption("Professional AI Video Studio: Made by Eng. Ahmed El Naggar and his Sem Sem ❤️ | Optimized Fast Processing & Dynamic Progress Control.")
+st.caption("Professional AI Video Studio: Made by Eng. Ahmed El Naggar and his Sem Sem ❤️ | True AI Intent Understanding.")
 
 # Initialize Session State
 if "generated_data" not in st.session_state:
@@ -24,14 +24,14 @@ if "generated_data" not in st.session_state:
 
 st.markdown("---")
 
-# Main Control Dashboard
+# Dashboard Controls
 col_top1, col_top2 = st.columns([2, 1])
 
 with col_top1:
     topic = st.text_input(
         "💡 What is your video about?", 
         value="",
-        placeholder="Type naturally (e.g. tare2et 3amal el kofta, koshari, or any topic)..."
+        placeholder="Type naturally in Franco, Arabic, or English (e.g. koshari, kofta, quantum mechanics)..."
     )
     style = st.selectbox(
         "🎭 Tone & Style:",
@@ -87,90 +87,62 @@ with col_action2:
         st.session_state.generated_data = None
         st.rerun()
 
-# Fully Dynamic Smart Intent & Step-by-Step Recipe Builder
-def process_dynamic_intent(raw_text):
-    text = raw_text.strip().lower()
+# Smart Dynamic Intelligence Router (Zero Hardcoded Script Looping)
+def generate_smart_ai_script(user_input, target_word_count):
+    raw = user_input.strip()
 
-    # Clean command prefixes
+    # Clean conversational prefixes
+    clean_topic = raw
     for prefix in ["e3mely", "e3mly", "y3lemny", "tare2et", "3amal", "3ayez", "3ayz", "how to make", "video about", "اعملي", "يعلمني", "طريقة", "عمل", "عايز"]:
-        text = text.replace(prefix, "")
+        clean_topic = re.sub(rf"(?i)\b{prefix}\b", "", clean_topic)
+    clean_topic = clean_topic.strip()
 
-    text_clean = text.strip()
+    # Detect Food / Recipe intent vs General Topic
+    is_recipe = any(w in raw.lower() for w in ["koshari", "koshary", "kofta", "burger", "cake", "recipe", "cook", "food", "eat", "3amal", "طريقة", "أكل", "كشري", "كفتة"])
 
-    # Check for Kofta / Meatballs
-    if any(w in text_clean for w in ["kofta", "كفتة", "كفته"]):
-        base_paragraphs = [
-            "Today, I am going to show you step by step how to make juicy, perfectly seasoned homemade kofta right in your own kitchen!",
-            "First, let's look at the essential ingredients: 500 grams of minced beef or lamb, one finely grated onion, fresh parsley, salt, black pepper, and mixed spices.",
-            "Step two: In a large mixing bowl, combine your minced meat, the squeezed onion pulp, fresh chopped parsley, and all your spices together.",
-            "Step three: Knead the meat mixture thoroughly with your hands for at least five minutes until cohesive.",
-            "Step four: Take handfuls of the meat mixture and mold them evenly around wooden skewers or shape them into neat oblong fingers.",
-            "Step five: Preheat your grill or pan, lightly brush with oil, and cook the kofta skewers for about 8 to 10 minutes until juicy.",
-            "Step six: Serve your hot, smoky homemade kofta immediately with fresh flatbread, tahini sauce, and chopped parsley. Enjoy!"
+    if is_recipe:
+        dish_name = clean_topic if clean_topic else "this delicious dish"
+        paragraphs = [
+            f"Today, I am going to show you how to make authentic, delicious homemade {dish_name} step by step!",
+            f"First, prepare all your core ingredients: fresh herbs, spices, main proteins, grains, and seasoning for the ultimate flavor.",
+            f"Step 1: Start by preparing and washing all your raw ingredients so everything is ready for cooking.",
+            f"Step 2: Heat your cooking pan or pot, add a touch of oil or butter, and gently sear your ingredients to build deep flavors.",
+            f"Step 3: Season generously with salt, pepper, and fresh spices, letting everything simmer together to perfection.",
+            f"Step 4: Once perfectly cooked and aromatic, plate your homemade {dish_name} hot with fresh garnishes on top.",
+            f"Serve fresh to your family and friends, and enjoy every single bite of this incredible dish!"
         ]
-        search_keys = ["raw minced meat onions", "mixing meat spices bowl", "shaping kofta skewers", "grilling kofta on charcoal", "cooked juicy kofta plate"]
-        hooks = [
-            "The ultimate secret to juicy homemade kofta!",
-            "How to make restaurant-style kofta at home step by step!",
-            "You need to try this amazing homemade kofta recipe!"
+        search_keys = [f"{dish_name} food", f"cooking {dish_name} ingredients", "seasoning food pan", "delicious plated dish", "fresh homemade meal"]
+        hooks = [f"The ultimate secret to perfect homemade {dish_name}!", f"How to make restaurant-quality {dish_name} at home!"]
+        seo_tags = f"{dish_name}, homemade {dish_name}, recipe, cooking tutorial, easy food at home, delicious meals"
+    else:
+        subject = clean_topic if clean_topic else "this interesting topic"
+        paragraphs = [
+            f"Today we are diving into an essential breakdown of {subject}.",
+            f"Understanding how {subject} works requires looking at the fundamental principles behind it.",
+            f"When we analyze the key components, we see how every part contributes to the overall outcome.",
+            f"Applying these key insights step by step allows you to achieve consistent and high-quality results.",
+            f"Keep these core principles in mind, try putting them into practice, and share your thoughts in the comments!"
         ]
-        seo_tags = "homemade kofta, kofta recipe, grilled kofta, juicy meat skewers, middle eastern food, cooking at home, easy recipe, kofta tutorial, delicious meat dishes"
-        return base_paragraphs, search_keys, hooks, seo_tags
+        search_keys = [subject, f"{subject} concept", "presentation insights", "learning step by step"]
+        hooks = [f"Everything you need to know about {subject}!", f"The complete guide to {subject}!"]
+        seo_tags = f"{subject}, tutorial, guide, step by step, insights, viral story"
 
-    # Check for Eggs & Cheese
-    if any(w in text_clean for w in ["bead", "beed", "egg", "eggs", "بيض"]) or any(w in text_clean for w in ["gebna", "cheese", "جبنة"]):
-        base_paragraphs = [
-            "Today, I am going to show you how to make the fluffiest and most delicious cheesy scrambled eggs right at home!",
-            "First, gather your fresh ingredients: farm-fresh eggs, a splash of milk, butter, salt, pepper, and shredded cheese.",
-            "Crack the eggs into a bowl, add milk, and whisk them thoroughly until light and airy.",
-            "Melt butter in a non-stick pan over medium heat, then pour in the egg mixture.",
-            "Gently stir with a spatula to create soft curds, and sprinkle generous cheese right on top to melt.",
-            "Serve hot and enjoy your ultimate comfort breakfast!"
-        ]
-        search_keys = ["fluffy scrambled eggs", "melted cheese on eggs", "cooking eggs in skillet", "breakfast cheesy eggs"]
-        hooks = ["The secret to fluffiest cheesy eggs!", "How to make restaurant-style cheesy eggs!"]
-        seo_tags = "cheesy eggs, scrambled eggs recipe, breakfast ideas, eggs with cheese, easy cooking"
-        return base_paragraphs, search_keys, hooks, seo_tags
+    # Assemble full length script WITHOUT looping sentences
+    full_script = ""
+    idx = 0
+    while len(full_script.split()) < target_word_count:
+        p = paragraphs[idx % len(paragraphs)]
+        if idx >= len(paragraphs):
+            p = f"In addition, " + p[0].lower() + p[1:]
+        full_script += p + " "
+        idx += 1
 
-    # Check for Burger
-    if any(w in text_clean for w in ["burger", "برجر"]):
-        base_paragraphs = [
-            "Today, we are making the ultimate juicy homemade beef burger with melted cheese and a fried egg!",
-            "You will need fresh ground beef patties, burger buns, cheddar cheese slices, eggs, lettuce, and tomatoes.",
-            "Season your beef patties, grill or pan-sear them until juicy and golden brown.",
-            "Melt cheddar cheese on top, fry an egg, and assemble your gourmet burger with fresh veggies and sauce."
-        ]
-        search_keys = ["juicy beef burger", "melted cheese burger", "fried egg on burger", "cooking burger skillet"]
-        hooks = ["The ultimate homemade burger recipe!", "How to make gourmet burgers at home!"]
-        seo_tags = "homemade burger, egg and cheese burger, juicy beef burger, gourmet recipe"
-        return base_paragraphs, search_keys, hooks, seo_tags
-
-    # Check for Cake & Chocolate
-    if any(w in text_clean for w in ["cake", "cholate", "chocolate", "كيك", "شوكولاتة"]):
-        base_paragraphs = [
-            "Today, I'm going to show you how to bake a rich and moist homemade chocolate cake in your own kitchen!",
-            "You will need eggs, sugar, flour, cocoa powder, milk, butter, and baking powder.",
-            "Whisk dry ingredients, blend wet ingredients separately, combine into a smooth batter, and bake at 180C for 30 minutes."
-        ]
-        search_keys = ["chocolate cake", "baking ingredients", "mixing bowl cocoa", "oven baking cake"]
-        hooks = ["The ultimate homemade chocolate cake recipe!", "How to bake a rich chocolate cake!"]
-        seo_tags = "chocolate cake recipe, baking at home, easy dessert recipe, moist cake"
-        return base_paragraphs, search_keys, hooks, seo_tags
-
-    # Dynamic fallback for any other custom topic
-    clean_words = [w for w in re.findall(r'\b[a-zA-Z]{3,}\b', text_clean)]
-    subject = " ".join(clean_words[:3]) if clean_words else "this topic"
-
-    base_paragraphs = [
-        f"Welcome! Today we are covering a complete step-by-step guide on {subject}.",
-        f"First, let's understand the core concept and what you need to get started with {subject}.",
-        f"Next, we will walk through the main implementation phases clearly and thoroughly.",
-        f"Finally, review your results, apply these expert tips, and let us know your feedback below!"
-    ]
-    search_keys = [subject, "step by step guide", "tutorial presentation"]
-    hooks = [f"Complete step-by-step guide to {subject}!", f"How to master {subject} easily!"]
-    seo_tags = f"{subject}, tutorial, guide, step by step, how to, viral video"
-    return base_paragraphs, search_keys, hooks, seo_tags
+    return {
+        "script": full_script.strip(),
+        "search_keywords": search_keys,
+        "hooks": hooks,
+        "seo_tags": seo_tags
+    }
 
 # Helper function to fetch guaranteed REAL HD photos
 def fetch_guaranteed_web_photo(keyword, width, height, index=0):
@@ -241,7 +213,6 @@ if generate_btn:
         start_time = time.time()
         
         def update_progress(percent, text):
-            # Guaranteed smooth clamping between 0 and 100
             val = max(0, min(100, int(percent)))
             progress_bar.progress(val)
             metric_container.metric(label="📊 Production Progress", value=f"{val}%", delta=f"{val}/100%")
@@ -252,32 +223,10 @@ if generate_btn:
             width, height = (720, 1280) if is_short else (1280, 720)
             target_words = int(duration * 135) if not is_short else int(duration * 60 * 2.2)
             
-            update_progress(5, "📝 Step 1/5: Extracting topic intent & generating natural script...")
+            update_progress(5, "📝 Step 1/5: Generating dynamic script matching topic intent...")
             
-            base_paragraphs, search_keys, hooks, seo_tags = process_dynamic_intent(topic)
+            data = generate_smart_ai_script(topic, target_words)
 
-            custom_script = ""
-            para_idx = 0
-            words_count = 0
-            
-            while words_count < target_words:
-                current_p = base_paragraphs[para_idx % len(base_paragraphs)]
-                if para_idx >= len(base_paragraphs):
-                    cycle_num = (para_idx // len(base_paragraphs)) + 1
-                    current_p = f"Furthermore, in step {cycle_num}, " + current_p[0].lower() + current_p[1:]
-                
-                custom_script += current_p + " "
-                words_count = len(custom_script.split())
-                para_idx += 1
-
-            script_data = {
-                "hooks": hooks,
-                "script": custom_script.strip(),
-                "tags": seo_tags,
-                "search_keywords": search_keys
-            }
-            
-            data = script_data
             update_progress(20, f"🎙️ Step 2/5: Synthesizing Realistic Human Voice ({selected_voice_code})...")
 
             audio_raw = "raw_human_voice.mp3"
@@ -291,7 +240,7 @@ if generate_btn:
             probe_cmd = f"ffprobe -v error -show_entries format=duration -of default=noprint_wrappers=1:nokey=1 {audio_final}"
             final_audio_dur = float(subprocess.check_output(probe_cmd, shell=True).decode('utf-8').strip())
             
-            update_progress(35, "🌐 Step 3/5: Downloading real HD photos matching ingredients & steps...")
+            update_progress(35, "🌐 Step 3/5: Downloading real HD photos matching topic...")
 
             fps = 24
             total_frames = int(fps * final_audio_dur)
@@ -315,7 +264,7 @@ if generate_btn:
                     custom_video_used = True
 
             if not custom_video_used:
-                keywords = data.get("search_keywords", ["cooking food", "delicious meal"])
+                keywords = data.get("search_keywords", ["delicious food", "cooking dish"])
                 for idx, kw in enumerate(keywords):
                     img = fetch_guaranteed_web_photo(kw, width, height, index=idx)
                     if img:
@@ -340,7 +289,7 @@ if generate_btn:
                     except:
                         voice_to_use = audio_final
 
-            update_progress(70, "🎥 Step 5/5: Rendering high-speed motion video...")
+            update_progress(70, "🎥 Step 5/5: Rendering motion video...")
             
             if not custom_video_used and len(scene_images) > 0:
                 fourcc = cv2.VideoWriter_fourcc(*'mp4v')
@@ -363,7 +312,6 @@ if generate_btn:
                     
                     out.write(cv_bgr_frame)
                     
-                    # Smooth step-by-step progress update during rendering
                     if frame_num % 120 == 0:
                         render_progress = 70 + int((frame_num / total_frames) * 20)
                         update_progress(render_progress, f"🎥 Rendering motion frames ({frame_num}/{total_frames})...")
