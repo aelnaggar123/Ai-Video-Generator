@@ -16,7 +16,7 @@ from io import BytesIO
 st.set_page_config(page_title="A & W AI Video Creation Tool", page_icon="🎬", layout="wide")
 
 st.title("🎬 A & W AI Video Creation Tool")
-st.caption("Professional AI Video Studio: Made by Eng. Ahmed El Naggar and his Sem Sem ❤️ | True Smart Recipe & Dynamic Generator.")
+st.caption("Professional AI Video Studio: Made by Eng. Ahmed El Naggar and his Sem Sem ❤️ | Optimized Fast Processing & Dynamic Progress Control.")
 
 # Initialize Session State
 if "generated_data" not in st.session_state:
@@ -98,14 +98,14 @@ def process_dynamic_intent(raw_text):
     text_clean = text.strip()
 
     # Check for Kofta / Meatballs
-    if any(w in text_clean for w in ["kofta", "kofta", "كفتة", "كفته"]):
+    if any(w in text_clean for w in ["kofta", "كفتة", "كفته"]):
         base_paragraphs = [
             "Today, I am going to show you step by step how to make juicy, perfectly seasoned homemade kofta right in your own kitchen!",
-            "First, let's look at the essential ingredients you will need: 500 grams of minced beef or lamb, one finely grated onion, a handful of fresh parsley, salt, black pepper, and mixed spices.",
+            "First, let's look at the essential ingredients: 500 grams of minced beef or lamb, one finely grated onion, fresh parsley, salt, black pepper, and mixed spices.",
             "Step two: In a large mixing bowl, combine your minced meat, the squeezed onion pulp, fresh chopped parsley, and all your spices together.",
-            "Step three: Knead the meat mixture thoroughly with your hands for at least five minutes until all the flavors blend and the meat becomes sticky and cohesive.",
+            "Step three: Knead the meat mixture thoroughly with your hands for at least five minutes until cohesive.",
             "Step four: Take handfuls of the meat mixture and mold them evenly around wooden skewers or shape them into neat oblong fingers.",
-            "Step five: Preheat your grill or pan, lightly brush with oil, and cook the kofta skewers for about 8 to 10 minutes, turning frequently until nicely charred and juicy on the inside.",
+            "Step five: Preheat your grill or pan, lightly brush with oil, and cook the kofta skewers for about 8 to 10 minutes until juicy.",
             "Step six: Serve your hot, smoky homemade kofta immediately with fresh flatbread, tahini sauce, and chopped parsley. Enjoy!"
         ]
         search_keys = ["raw minced meat onions", "mixing meat spices bowl", "shaping kofta skewers", "grilling kofta on charcoal", "cooked juicy kofta plate"]
@@ -117,7 +117,7 @@ def process_dynamic_intent(raw_text):
         seo_tags = "homemade kofta, kofta recipe, grilled kofta, juicy meat skewers, middle eastern food, cooking at home, easy recipe, kofta tutorial, delicious meat dishes"
         return base_paragraphs, search_keys, hooks, seo_tags
 
-    # Check for Eggs & Cheese (Bead & Gebna)
+    # Check for Eggs & Cheese
     if any(w in text_clean for w in ["bead", "beed", "egg", "eggs", "بيض"]) or any(w in text_clean for w in ["gebna", "cheese", "جبنة"]):
         base_paragraphs = [
             "Today, I am going to show you how to make the fluffiest and most delicious cheesy scrambled eggs right at home!",
@@ -241,8 +241,10 @@ if generate_btn:
         start_time = time.time()
         
         def update_progress(percent, text):
-            progress_bar.progress(percent)
-            metric_container.metric(label="📊 Production Progress", value=f"{percent}%", delta=f"{percent} out of 100%")
+            # Guaranteed smooth clamping between 0 and 100
+            val = max(0, min(100, int(percent)))
+            progress_bar.progress(val)
+            metric_container.metric(label="📊 Production Progress", value=f"{val}%", delta=f"{val}/100%")
             status_container.info(text)
 
         try:
@@ -250,7 +252,7 @@ if generate_btn:
             width, height = (720, 1280) if is_short else (1280, 720)
             target_words = int(duration * 135) if not is_short else int(duration * 60 * 2.2)
             
-            update_progress(10, "📝 Step 1/5: Smart Dynamic Engine building recipe script & steps...")
+            update_progress(5, "📝 Step 1/5: Extracting topic intent & generating natural script...")
             
             base_paragraphs, search_keys, hooks, seo_tags = process_dynamic_intent(topic)
 
@@ -262,7 +264,7 @@ if generate_btn:
                 current_p = base_paragraphs[para_idx % len(base_paragraphs)]
                 if para_idx >= len(base_paragraphs):
                     cycle_num = (para_idx // len(base_paragraphs)) + 1
-                    current_p = f"Moving forward to next phase {cycle_num}, " + current_p[0].lower() + current_p[1:]
+                    current_p = f"Furthermore, in step {cycle_num}, " + current_p[0].lower() + current_p[1:]
                 
                 custom_script += current_p + " "
                 words_count = len(custom_script.split())
@@ -276,7 +278,7 @@ if generate_btn:
             }
             
             data = script_data
-            update_progress(25, f"🎙️ Step 2/5: Synthesizing Realistic Human Voice ({selected_voice_code})...")
+            update_progress(20, f"🎙️ Step 2/5: Synthesizing Realistic Human Voice ({selected_voice_code})...")
 
             audio_raw = "raw_human_voice.mp3"
             audio_final = "final_voice.mp3"
@@ -289,7 +291,7 @@ if generate_btn:
             probe_cmd = f"ffprobe -v error -show_entries format=duration -of default=noprint_wrappers=1:nokey=1 {audio_final}"
             final_audio_dur = float(subprocess.check_output(probe_cmd, shell=True).decode('utf-8').strip())
             
-            update_progress(45, "🌐 Step 3/5: Downloading real HD photos matching ingredients & steps...")
+            update_progress(35, "🌐 Step 3/5: Downloading real HD photos matching ingredients & steps...")
 
             fps = 24
             total_frames = int(fps * final_audio_dur)
@@ -308,12 +310,12 @@ if generate_btn:
                 elif uploaded_file.type.startswith("video"):
                     with open("custom_input_vid.mp4", "wb") as f:
                         f.write(uploaded_file.getbuffer())
-                    cmd_vid_audio = f"ffmpeg -y -stream_loop -1 -i custom_input_vid.mp4 -i {audio_final} -c:v libx264 -pix_fmt yuv420p -c:a aac -shortest {final_mp4}"
+                    cmd_vid_audio = f"ffmpeg -y -stream_loop -1 -i custom_input_vid.mp4 -i {audio_final} -c:v libx264 -preset ultrafast -pix_fmt yuv420p -c:a aac -shortest {final_mp4}"
                     subprocess.run(cmd_vid_audio, shell=True, check=True)
                     custom_video_used = True
 
             if not custom_video_used:
-                keywords = data.get("search_keywords", ["raw minced meat", "cooking food"])
+                keywords = data.get("search_keywords", ["cooking food", "delicious meal"])
                 for idx, kw in enumerate(keywords):
                     img = fetch_guaranteed_web_photo(kw, width, height, index=idx)
                     if img:
@@ -325,7 +327,7 @@ if generate_btn:
                     if img:
                         scene_images.append(img)
 
-            update_progress(65, "🎵 Step 4/5: Mixing engaging background music...")
+            update_progress(55, "🎵 Step 4/5: Mixing engaging background music...")
             
             voice_to_use = audio_final
             if enable_bg_music:
@@ -338,7 +340,7 @@ if generate_btn:
                     except:
                         voice_to_use = audio_final
 
-            update_progress(80, "🎥 Step 5/5: Rendering motion video & burning subtitles...")
+            update_progress(70, "🎥 Step 5/5: Rendering high-speed motion video...")
             
             if not custom_video_used and len(scene_images) > 0:
                 fourcc = cv2.VideoWriter_fourcc(*'mp4v')
@@ -361,14 +363,16 @@ if generate_btn:
                     
                     out.write(cv_bgr_frame)
                     
-                    if frame_num % 100 == 0:
-                        inner_p = 80 + int((frame_num / total_frames) * 15)
-                        progress_bar.progress(inner_p)
+                    # Smooth step-by-step progress update during rendering
+                    if frame_num % 120 == 0:
+                        render_progress = 70 + int((frame_num / total_frames) * 20)
+                        update_progress(render_progress, f"🎥 Rendering motion frames ({frame_num}/{total_frames})...")
 
                 out.release()
 
                 video_to_merge = video_no_audio
                 if enable_subtitles:
+                    update_progress(92, "💬 Burning subtitle stream into video...")
                     try:
                         chunks = split_script_into_chunks(data['script'], max_words=4)
                         srt_content = ""
@@ -393,13 +397,14 @@ if generate_btn:
                         font_size = 22 if is_short else 28
                         subtitle_filter = f"subtitles=subtitles.srt:force_style='FontSize={font_size},PrimaryColour=&H00FFFFFF,OutlineColour=&H00000000,BackColour=&H80000000,BorderStyle=4,Alignment=2,MarginV=60'"
                         
-                        cmd_srt = f"ffmpeg -y -i {video_no_audio} -vf \"{subtitle_filter}\" -c:v libx264 {video_with_subtitles}"
+                        cmd_srt = f"ffmpeg -y -i {video_no_audio} -vf \"{subtitle_filter}\" -c:v libx264 -preset ultrafast {video_with_subtitles}"
                         subprocess.run(cmd_srt, shell=True, check=True)
                         video_to_merge = video_with_subtitles
                     except:
                         pass
 
-                cmd_merge = f"ffmpeg -y -i {video_to_merge} -i {voice_to_use} -c:v libx264 -pix_fmt yuv420p -c:a aac -shortest {final_mp4}"
+                update_progress(98, "📦 Finalizing MP4 media stream...")
+                cmd_merge = f"ffmpeg -y -i {video_to_merge} -i {voice_to_use} -c:v libx264 -preset ultrafast -pix_fmt yuv420p -c:a aac -shortest {final_mp4}"
                 subprocess.run(cmd_merge, shell=True, check=True)
 
             update_progress(100, "🎉 Production Complete Successfully!")
