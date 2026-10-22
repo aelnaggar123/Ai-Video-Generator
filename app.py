@@ -13,7 +13,76 @@ from PIL import Image
 from io import BytesIO
 
 # Page Configuration
-st.set_page_config(page_title="A & W AI Video Creation Tool", page_icon="🎬", layout="wide")
+st.set_page_config(
+    page_title="A & W AI Video Creation Tool", 
+    page_icon="🎬", 
+    layout="wide",
+    initial_sidebar_state="collapsed"
+)
+
+# Dark Elegant Theme CSS Injection
+st.markdown("""
+    <style>
+    /* Main Background & Font */
+    .stApp {
+        background: linear-gradient(135deg, #0e1117 0%, #161b22 50%, #1a0e14 100%);
+        color: #f0f6fc;
+        font-family: 'Inter', system-ui, -apple-system, sans-serif;
+    }
+    
+    /* Headers & Title */
+    h1 {
+        color: #ffffff !important;
+        font-weight: 700 !important;
+        letter-spacing: -0.5px;
+    }
+    .stCaption {
+        color: #8b949e !important;
+        font-size: 0.95rem !important;
+    }
+    
+    /* Input Fields & Selectboxes */
+    .stTextInput input, .stSelectbox > div > div, .stTextArea textarea {
+        background-color: #161b22 !important;
+        color: #f0f6fc !important;
+        border: 1px solid #30363d !important;
+        border-radius: 8px !important;
+    }
+    .stTextInput input:focus, .stSelectbox > div > div:focus {
+        border-color: #8b0000 !important;
+        box-shadow: 0 0 8px rgba(139, 0, 0, 0.4) !important;
+    }
+
+    /* Buttons Style */
+    .stButton > button[kind="primary"] {
+        background: linear-gradient(135deg, #8b0000 0%, #5a0000 100%) !important;
+        color: #ffffff !important;
+        border: none !important;
+        border-radius: 8px !important;
+        font-weight: 600 !important;
+        transition: all 0.3s ease !important;
+        box-shadow: 0 4px 12px rgba(139, 0, 0, 0.3) !important;
+    }
+    .stButton > button[kind="primary"]:hover {
+        background: linear-gradient(135deg, #a30000 0%, #700000 100%) !important;
+        box-shadow: 0 6px 16px rgba(139, 0, 0, 0.5) !important;
+        transform: translateY(-1px);
+    }
+    
+    /* Containers & Cards */
+    div[data-testid="stBlock"] {
+        background-color: rgba(22, 27, 34, 0.6);
+        border-radius: 12px;
+        padding: 10px;
+        border: 1px solid #21262d;
+    }
+    
+    /* Horizontal Rule */
+    hr {
+        border-color: #30363d !important;
+    }
+    </style>
+""", unsafe_allow_html=True)
 
 st.title("🎬 A & W AI Video Creation Tool")
 st.caption("Professional AI Video Studio: Made by Eng. Ahmed El Naggar and his Sem Sem ❤️")
