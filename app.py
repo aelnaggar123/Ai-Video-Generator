@@ -11,7 +11,6 @@ import numpy as np
 import re
 from PIL import Image
 from io import BytesIO
-import google.generativeai as genai
 
 # Page Configuration
 st.set_page_config(
@@ -142,27 +141,20 @@ with col_action2:
         st.session_state.generated_data = None
         st.rerun()
 
-# Hardcoded Direct REST API Call to Gemini (Bypasses Python SDK Model-Listing Bugs Completely)
+# Ultra-Fast Optimized API Call with 60s Timeout
 def generate_script_with_gemini(user_prompt, target_word_count, tone_style):
     if "GEMINI_API_KEY" not in st.secrets:
         raise ValueError("GEMINI_API_KEY is missing from Streamlit Secrets! Please add it.")
     
     api_key = st.secrets["GEMINI_API_KEY"]
+    url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key={api_key}"
     
-    # Direct Google AI Studio REST Endpoint for gemini-3.8-flash (or gemini-1.5-flash fallback via API)
-    url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-3.8-flash:generateContent?key={api_key}"
-    
-    prompt = f"""
-    You are an expert professional video scriptwriter. 
-    The user topic/request is: "{user_prompt}" (It might be in Franco-Arabic, Arabic, or English with slang or typos).
-    Tone & Style: {tone_style}.
-    Target word count: approximately {target_word_count} words.
-    
-    Provide your output strictly in valid JSON format with the following keys:
-    1. "script": A 100% unique, detailed, human-like video script explicitly about this exact topic. If it's a tutorial or guide, give clear steps. No looping or repetitive filler text.
-    2. "hooks": An array of 3 catchy viral short hooks.
-    3. "search_keywords": An array of 5 precise English keywords for fetching relevant images.
-    4. "tags": A comma-separated string of SEO tags.
+    prompt = f"""Generate a video script about: "{user_prompt}". Tone: {tone_style}. Words: ~{target_word_count}.
+    Return ONLY a valid JSON object with these exact keys:
+    "script": "the full engaging script text",
+    "hooks": ["hook 1", "hook 2", "hook 3"],
+    "search_keywords": ["keyword1", "keyword2", "keyword3", "keyword4"],
+    "tags": "tag1, tag2, tag3"
     """
 
     payload = {
@@ -173,14 +165,10 @@ def generate_script_with_gemini(user_prompt, target_word_count, tone_style):
     
     headers = {"Content-Type": "application/json"}
     
-    response = requests.post(url, json=payload, headers=headers, timeout=25)
+    response = requests.post(url, json=payload, headers=headers, timeout=60)
     
     if response.status_code != 200:
-        # Fallback to standard 1.5-flash endpoint if 3.8 encounters any niche restriction
-        url_fallback = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key={api_key}"
-        response = requests.post(url_fallback, json=payload, headers=headers, timeout=25)
-        if response.status_code != 200:
-            raise Exception(f"API Error ({response.status_code}): {response.text}")
+        raise Exception(f"API Error ({response.status_code}): {response.text}")
 
     res_data = response.json()
     text_res = res_data["candidates"][0]["content"]["parts"][0]["text"].strip()
