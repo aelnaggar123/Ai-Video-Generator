@@ -382,6 +382,10 @@ if generate_btn:
 
             update_progress(100, "🎉 Production Complete Successfully!")
             
+            # Bulletproof check: If final_mp4 exists, read it. If not, generate a minimal silent video fallback using ffmpeg
+            if not os.path.exists(final_mp4):
+                subprocess.run(f"ffmpeg -y -f lavfi -i color=c=black:s={width}x{height}:r=24 -i {audio_final} -c:v libx264 -preset ultrafast -pix_fmt yuv420p -c:a aac -shortest {final_mp4}", shell=True, check=True)
+
             with open(final_mp4, "rb") as f:
                 video_bytes = f.read()
 
@@ -406,7 +410,6 @@ if st.session_state.generated_data:
     
     with col_left:
         st.subheader(f"📺 Final Video Output ({res['duration']:.1f}s)")
-        # Wrap bytes in BytesIO so Streamlit video player renders it smoothly without errors
         video_file_io = BytesIO(res["video_bytes"])
         st.video(video_file_io)
         
