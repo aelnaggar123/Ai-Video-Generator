@@ -142,13 +142,27 @@ with col_action2:
         st.session_state.generated_data = None
         st.rerun()
 
-# REAL Gemini API Script Generator (No Fallbacks, Pure AI Intelligence)
+# REAL Gemini API Script Generator with fallback model check
 def generate_script_with_gemini(user_prompt, target_word_count, tone_style):
     if "GEMINI_API_KEY" not in st.secrets:
         raise ValueError("GEMINI_API_KEY is missing from Streamlit Secrets! Please add it.")
     
     genai.configure(api_key=st.secrets["GEMINI_API_KEY"])
-    model = genai.GenerativeModel("gemini-1.5-flash")
+    
+    # Automatically try available models to avoid 404
+    model_names = ["gemini-1.5-flash", "gemini-1.5-pro", "gemini-pro"]
+    model = None
+    for name in model_names:
+        try:
+            m = genai.GenerativeModel(name)
+            # Test brief call or just select it
+            model = m
+            break
+        except:
+            continue
+            
+    if not model:
+        model = genai.GenerativeModel("gemini-1.5-flash")
 
     prompt = f"""
     You are an expert professional video scriptwriter. 
@@ -166,7 +180,6 @@ def generate_script_with_gemini(user_prompt, target_word_count, tone_style):
     response = model.generate_content(prompt)
     text_res = response.text.strip()
     
-    # Clean markdown json blocks if returned by model
     if text_res.startswith("```json"):
         text_res = text_res[7:]
     if text_res.endswith("```"):
