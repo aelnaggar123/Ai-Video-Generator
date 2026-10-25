@@ -141,7 +141,6 @@ with col_action2:
         st.session_state.generated_data = None
         st.rerun()
 
-# Ultra-Resilient Script Generator with Smart Instant Fallback
 def generate_script_with_gemini(user_prompt, target_word_count, tone_style):
     words_list = user_prompt.split()
     keywords = words_list[:4] if len(words_list) >= 4 else ["technology", "business", "workspace"]
@@ -189,7 +188,7 @@ def generate_script_with_gemini(user_prompt, target_word_count, tone_style):
                     "tags": tags
                 }
         except Exception:
-            pass # Silently fallback to guarantee 100% smooth generation without freezing
+            pass
 
     return {
         "script": fallback_script,
@@ -270,24 +269,19 @@ if generate_btn:
             target_words = int(duration * 135) if not is_short else int(duration * 60 * 2.2)
             
             update_progress(5, "🤖 Step 1/5: Preparing script & content...")
-            
             data = generate_script_with_gemini(topic, target_words, style)
 
             update_progress(20, f"🎙️ Step 2/5: Synthesizing Realistic Human Voice ({selected_voice_code})...")
-
             audio_raw = "raw_human_voice.mp3"
             audio_final = "final_voice.mp3"
             
             asyncio.run(generate_human_voice(data['script'], selected_voice_code, audio_raw))
-
-            cmd_audio = f"ffmpeg -y -i {audio_raw} -filter:a 'atempo=1.02' {audio_final}"
-            subprocess.run(cmd_audio, shell=True, check=True)
+            subprocess.run(f"ffmpeg -y -i {audio_raw} -filter:a 'atempo=1.02' {audio_final}", shell=True, check=True)
 
             probe_cmd = f"ffprobe -v error -show_entries format=duration -of default=noprint_wrappers=1:nokey=1 {audio_final}"
             final_audio_dur = float(subprocess.check_output(probe_cmd, shell=True).decode('utf-8').strip())
             
             update_progress(35, "🌐 Step 3/5: Downloading HD visual assets...")
-
             fps = 24
             total_frames = int(fps * final_audio_dur)
             video_no_audio = "temp_video.mp4"
@@ -305,8 +299,7 @@ if generate_btn:
                 elif uploaded_file.type.startswith("video"):
                     with open("custom_input_vid.mp4", "wb") as f:
                         f.write(uploaded_file.getbuffer())
-                    cmd_vid_audio = f"ffmpeg -y -stream_loop -1 -i custom_input_vid.mp4 -i {audio_final} -c:v libx264 -preset ultrafast -pix_fmt yuv420p -c:a aac -shortest {final_mp4}"
-                    subprocess.run(cmd_vid_audio, shell=True, check=True)
+                    subprocess.run(f"ffmpeg -y -stream_loop -1 -i custom_input_vid.mp4 -i {audio_final} -c:v libx264 -preset ultrafast -pix_fmt yuv420p -c:a aac -shortest {final_mp4}", shell=True, check=True)
                     custom_video_used = True
 
             if not custom_video_used:
@@ -323,39 +316,31 @@ if generate_btn:
                         scene_images.append(img)
 
             update_progress(55, "🎵 Step 4/5: Mixing background music...")
-            
             voice_to_use = audio_final
             if enable_bg_music:
                 bg_music_file = "bg_music.mp3"
                 if fetch_royalty_free_music(bg_music_file):
-                    cmd_mix = f"ffmpeg -y -i {audio_final} -stream_loop -1 -i {bg_music_file} -filter_complex \"[1:a]volume=0.15[bg];[0:a][bg]amix=inputs=2:duration=first[a]\" -map \"[a]\" {audio_combined}"
                     try:
-                        subprocess.run(cmd_mix, shell=True, check=True)
+                        subprocess.run(f"ffmpeg -y -i {audio_final} -stream_loop -1 -i {bg_music_file} -filter_complex \"[1:a]volume=0.15[bg];[0:a][bg]amix=inputs=2:duration=first[a]\" -map \"[a]\" {audio_combined}", shell=True, check=True)
                         voice_to_use = audio_combined
                     except:
                         voice_to_use = audio_final
 
             update_progress(70, "🎥 Step 5/5: Rendering video & burning subtitles...")
-            
             if not custom_video_used and len(scene_images) > 0:
                 fourcc = cv2.VideoWriter_fourcc(*'mp4v')
                 out = cv2.VideoWriter(video_no_audio, fourcc, fps, (width, height))
-                
                 frames_per_scene = max(1, total_frames // len(scene_images))
 
                 for frame_num in range(total_frames):
                     scene_idx = min(frame_num // frames_per_scene, len(scene_images) - 1)
                     scene_frame_offset = frame_num % frames_per_scene
-                    
                     base_img = np.array(scene_images[scene_idx].resize((width + 100, height + 100), Image.Resampling.LANCZOS))
-                    
                     progress_in_scene = scene_frame_offset / float(frames_per_scene)
                     shift_x = int(progress_in_scene * 80)
                     shift_y = int(progress_in_scene * 40)
-                    
                     cropped_frame = base_img[shift_y:shift_y + height, shift_x:shift_x + width]
                     cv_bgr_frame = cv2.cvtColor(cropped_frame, cv2.COLOR_RGB2BGR)
-                    
                     out.write(cv_bgr_frame)
                     
                     if frame_num % 120 == 0:
@@ -371,18 +356,15 @@ if generate_btn:
                         chunks = split_script_into_chunks(data['script'], max_words=4)
                         srt_content = ""
                         time_per_chunk = final_audio_dur / float(len(chunks))
-                        
                         for idx, chunk in enumerate(chunks):
                             start_s = idx * time_per_chunk
                             end_s = (idx + 1) * time_per_chunk
-                            
                             def fmt_time(s):
                                 hrs = int(s // 3600)
                                 mins = int((s % 3600) // 60)
                                 secs = int(s % 60)
                                 millis = int((s - int(s)) * 1000)
                                 return f"{hrs:02d}:{mins:02d}:{secs:02d},{millis:03d}"
-                                
                             srt_content += f"{idx + 1}\n{fmt_time(start_s)} --> {fmt_time(end_s)}\n{chunk.upper()}\n\n"
                             
                         with open("subtitles.srt", "w", encoding="utf-8") as f:
@@ -390,24 +372,25 @@ if generate_btn:
                             
                         font_size = 22 if is_short else 28
                         subtitle_filter = f"subtitles=subtitles.srt:force_style='FontSize={font_size},PrimaryColour=&H00FFFFFF,OutlineColour=&H00000000,BackColour=&H80000000,BorderStyle=4,Alignment=2,MarginV=60'"
-                        
-                        cmd_srt = f"ffmpeg -y -i {video_no_audio} -vf \"{subtitle_filter}\" -c:v libx264 -preset ultrafast {video_with_subtitles}"
-                        subprocess.run(cmd_srt, shell=True, check=True)
+                        subprocess.run(f"ffmpeg -y -i {video_no_audio} -vf \"{subtitle_filter}\" -c:v libx264 -preset ultrafast {video_with_subtitles}", shell=True, check=True)
                         video_to_merge = video_with_subtitles
                     except:
                         pass
 
                 update_progress(98, "📦 Finalizing media package...")
-                cmd_merge = f"ffmpeg -y -i {video_to_merge} -i {voice_to_use} -c:v libx264 -preset ultrafast -pix_fmt yuv420p -c:a aac -shortest {final_mp4}"
-                subprocess.run(cmd_merge, shell=True, check=True)
+                subprocess.run(f"ffmpeg -y -i {video_to_merge} -i {voice_to_use} -c:v libx264 -preset ultrafast -pix_fmt yuv420p -c:a aac -shortest {final_mp4}", shell=True, check=True)
 
             update_progress(100, "🎉 Production Complete Successfully!")
             
+            # Read video bytes directly into session state to prevent any FileNotFoundError
+            with open(final_mp4, "rb") as f:
+                video_bytes = f.read()
+
             st.session_state.generated_data = {
                 "hooks": data['hooks'],
                 "script": data['script'],
                 "tags": data['tags'],
-                "video_path": final_mp4,
+                "video_bytes": video_bytes,
                 "is_short": is_short,
                 "topic": topic,
                 "duration": final_audio_dur
@@ -420,33 +403,29 @@ if st.session_state.generated_data:
     res = st.session_state.generated_data
     st.markdown("---")
     
-    if os.path.exists(res["video_path"]):
-        col_left, col_right = st.columns([1, 1])
+    col_left, col_right = st.columns([1, 1])
+    
+    with col_left:
+        st.subheader(f"📺 Final Video Output ({res['duration']:.1f}s)")
+        st.video(res["video_bytes"])
         
-        with col_left:
-            st.subheader(f"📺 Final Video Output ({res['duration']:.1f}s)")
-            st.video(res["video_path"])
+        file_label = "Shorts_MP4" if res["is_short"] else "Video_MP4"
+        st.download_button(
+            label=f"⬇️ Download {file_label}",
+            data=res["video_bytes"],
+            file_name=f"AI_{file_label}_{res['topic'][:10].replace(' ', '_')}.mp4",
+            mime="video/mp4",
+            use_container_width=True
+        )
             
-            file_label = "Shorts_MP4" if res["is_short"] else "Video_MP4"
-            with open(res["video_path"], "rb") as f:
-                st.download_button(
-                    label=f"⬇️ Download {file_label}",
-                    data=f,
-                    file_name=f"AI_{file_label}_{res['topic'][:10].replace(' ', '_')}.mp4",
-                    mime="video/mp4",
-                    use_container_width=True
-                )
-                
-        with col_right:
-            st.subheader("🎯 High-CTR Short Viral Hooks")
-            for idx, hook in enumerate(res["hooks"], 1):
-                st.info(f"**Hook {idx}:** {hook}")
-                
-            st.subheader("📌 Highly Related SEO Tags & Keywords")
-            st.code(res["tags"], language="text")
+    with col_right:
+        st.subheader("🎯 High-CTR Short Viral Hooks")
+        for idx, hook in enumerate(res["hooks"], 1):
+            st.info(f"**Hook {idx}:** {hook}")
+            
+        st.subheader("📌 Highly Related SEO Tags & Keywords")
+        st.code(res["tags"], language="text")
 
-        st.markdown("---")
-        st.subheader("🎙️ Generated Voiceover Script")
-        st.text_area("Copy Script Text:", res["script"], height=180)
-    else:
-        st.warning("⚠️ The generated video file was cleared or expired from the temporary storage. Please click 'Generate AI Video Now' again to recreate it instantly.")
+    st.markdown("---")
+    st.subheader("🎙️ Generated Voiceover Script")
+    st.text_area("Copy Script Text:", res["script"], height=180)
