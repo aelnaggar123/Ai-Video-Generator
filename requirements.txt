@@ -5,3 +5,4 @@ gTTS
 edge-tts
 Pillow
 numpy
+google-generativeai
