@@ -382,7 +382,6 @@ if generate_btn:
 
             update_progress(100, "🎉 Production Complete Successfully!")
             
-            # Read video bytes directly into session state to prevent any FileNotFoundError
             with open(final_mp4, "rb") as f:
                 video_bytes = f.read()
 
@@ -407,7 +406,9 @@ if st.session_state.generated_data:
     
     with col_left:
         st.subheader(f"📺 Final Video Output ({res['duration']:.1f}s)")
-        st.video(res["video_bytes"])
+        # Wrap bytes in BytesIO so Streamlit video player renders it smoothly without errors
+        video_file_io = BytesIO(res["video_bytes"])
+        st.video(video_file_io)
         
         file_label = "Shorts_MP4" if res["is_short"] else "Video_MP4"
         st.download_button(
