@@ -142,25 +142,16 @@ with col_action2:
         st.session_state.generated_data = None
         st.rerun()
 
-# Bulletproof Gemini Script Generator using valid active models
+# Hardcoded Direct REST API Call to Gemini (Bypasses Python SDK Model-Listing Bugs Completely)
 def generate_script_with_gemini(user_prompt, target_word_count, tone_style):
     if "GEMINI_API_KEY" not in st.secrets:
         raise ValueError("GEMINI_API_KEY is missing from Streamlit Secrets! Please add it.")
     
-    genai.configure(api_key=st.secrets["GEMINI_API_KEY"])
+    api_key = st.secrets["GEMINI_API_KEY"]
     
-    # Fetch active model dynamically from the account list
-    model_to_use = "gemini-pro"
-    try:
-        for m in genai.list_models():
-            if 'generateContent' in m.supported_generation_methods:
-                model_to_use = m.name
-                break
-    except:
-        pass
-        
-    model = genai.GenerativeModel(model_to_use)
-
+    # Direct Google AI Studio REST Endpoint for gemini-3.8-flash (or gemini-1.5-flash fallback via API)
+    url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-3.8-flash:generateContent?key={api_key}"
+    
     prompt = f"""
     You are an expert professional video scriptwriter. 
     The user topic/request is: "{user_prompt}" (It might be in Franco-Arabic, Arabic, or English with slang or typos).
@@ -174,8 +165,25 @@ def generate_script_with_gemini(user_prompt, target_word_count, tone_style):
     4. "tags": A comma-separated string of SEO tags.
     """
 
-    response = model.generate_content(prompt)
-    text_res = response.text.strip()
+    payload = {
+        "contents": [{
+            "parts": [{"text": prompt}]
+        }]
+    }
+    
+    headers = {"Content-Type": "application/json"}
+    
+    response = requests.post(url, json=payload, headers=headers, timeout=25)
+    
+    if response.status_code != 200:
+        # Fallback to standard 1.5-flash endpoint if 3.8 encounters any niche restriction
+        url_fallback = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key={api_key}"
+        response = requests.post(url_fallback, json=payload, headers=headers, timeout=25)
+        if response.status_code != 200:
+            raise Exception(f"API Error ({response.status_code}): {response.text}")
+
+    res_data = response.json()
+    text_res = res_data["candidates"][0]["content"]["parts"][0]["text"].strip()
     
     if text_res.startswith("```json"):
         text_res = text_res[7:]
@@ -255,7 +263,7 @@ if generate_btn:
             width, height = (720, 1280) if is_short else (1280, 720)
             target_words = int(duration * 135) if not is_short else int(duration * 60 * 2.2)
             
-            update_progress(5, "🤖 Step 1/5: Connecting to active Gemini model...")
+            update_progress(5, "🤖 Step 1/5: Connecting via Direct API...")
             
             data = generate_script_with_gemini(topic, target_words, style)
 
