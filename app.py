@@ -141,25 +141,17 @@ with col_action2:
         st.session_state.generated_data = None
         st.rerun()
 
-# Hardcoded Forced gemini-3.8-flash (Direct Google Recommendation)
+# Ultra-Light Lightning Fast Plain Text Generator (Zero Timeout Risk)
 def generate_script_with_gemini(user_prompt, target_word_count, tone_style):
     if "GEMINI_API_KEY" not in st.secrets:
         raise ValueError("GEMINI_API_KEY is missing from Streamlit Secrets! Please add it.")
     
     api_key = st.secrets["GEMINI_API_KEY"]
-    
-    # Enforcing gemini-3.8-flash strictly as requested by Google's latest error message
     target_model_path = "models/gemini-3.8-flash"
-    
     gen_url = f"https://generativelanguage.googleapis.com/v1beta/{target_model_path}:generateContent?key={api_key}"
     
-    prompt = f"""Generate a video script about: "{user_prompt}". Tone: {tone_style}. Words: ~{target_word_count}.
-    Return ONLY a valid JSON object with these exact keys:
-    "script": "the full engaging script text",
-    "hooks": ["hook 1", "hook 2", "hook 3"],
-    "search_keywords": ["keyword1", "keyword2", "keyword3", "keyword4"],
-    "tags": "tag1, tag2, tag3"
-    """
+    # Simple plain text prompt to guarantee lightning fast response
+    prompt = f"Write an engaging video script about '{user_prompt}' with a {tone_style} tone, approximately {target_word_count} words. Make it smooth and professional."
 
     payload = {
         "contents": [{
@@ -168,20 +160,31 @@ def generate_script_with_gemini(user_prompt, target_word_count, tone_style):
     }
     
     headers = {"Content-Type": "application/json"}
-    response = requests.post(gen_url, json=payload, headers=headers, timeout=60)
+    response = requests.post(gen_url, json=payload, headers=headers, timeout=30)
     
     if response.status_code != 200:
-        raise Exception(f"API Error ({response.status_code}) on {target_model_path}: {response.text}")
+        raise Exception(f"API Error ({response.status_code}): {response.text}")
 
     res_data = response.json()
-    text_res = res_data["candidates"][0]["content"]["parts"][0]["text"].strip()
+    script_text = res_data["candidates"][0]["content"]["parts"][0]["text"].strip()
     
-    if text_res.startswith("```json"):
-        text_res = text_res[7:]
-    if text_res.endswith("```"):
-        text_res = text_res[:-3]
-        
-    return json.loads(text_res.strip())
+    # Auto-generate hooks & keywords locally to avoid any AI delay
+    hooks = [
+        f"You won't believe this truth about {user_prompt}!",
+        f"The secret behind {user_prompt} revealed!",
+        f"Stop scrolling if you want to master {user_prompt}!"
+    ]
+    
+    words_list = user_prompt.split()
+    keywords = words_list[:4] if len(words_list) >= 4 else ["technology", "business", "workspace", "success"]
+    tags = f"{user_prompt}, ai video, viral, professional, 2026"
+
+    return {
+        "script": script_text,
+        "hooks": hooks,
+        "search_keywords": keywords,
+        "tags": tags
+    }
 
 def fetch_guaranteed_web_photo(keyword, width, height, index=0):
     clean_kw = keyword.strip().replace(" ", "").lower()
@@ -254,7 +257,7 @@ if generate_btn:
             width, height = (720, 1280) if is_short else (1280, 720)
             target_words = int(duration * 135) if not is_short else int(duration * 60 * 2.2)
             
-            update_progress(5, "🤖 Step 1/5: Connecting to Gemini 3.8 Flash...")
+            update_progress(5, "🤖 Step 1/5: Generating lightning-fast script...")
             
             data = generate_script_with_gemini(topic, target_words, style)
 
