@@ -142,25 +142,27 @@ with col_action2:
         st.session_state.generated_data = None
         st.rerun()
 
-# Dynamic Model Discovery & Gemini Script Generator
+# Ultra-Smart Model Selection & Gemini Script Generator
 def generate_script_with_gemini(user_prompt, target_word_count, tone_style):
     if "GEMINI_API_KEY" not in st.secrets:
         raise ValueError("GEMINI_API_KEY is missing from Streamlit Secrets! Please add it.")
     
     genai.configure(api_key=st.secrets["GEMINI_API_KEY"])
     
-    # Auto-detect available generative models
-    target_model = None
-    for m in genai.list_models():
-        if 'generateContent' in m.supported_generation_methods:
-            if 'flash' in m.name or 'pro' in m.name:
-                target_model = m.name
+    # Priority list of latest stable Gemini models
+    candidate_models = ["gemini-3.8-flash", "gemini-1.5-flash", "gemini-pro"]
+    selected_model_name = "gemini-3.8-flash"
+    
+    try:
+        available_models = [m.name for m in genai.list_models() if 'generateContent' in m.supported_generation_methods]
+        for cand in candidate_models:
+            if any(cand in m for m in available_models):
+                selected_model_name = cand
                 break
-                
-    if not target_model:
-        target_model = 'gemini-1.5-flash'
+    except:
+        pass
         
-    model = genai.GenerativeModel(target_model)
+    model = genai.GenerativeModel(selected_model_name)
 
     prompt = f"""
     You are an expert professional video scriptwriter. 
@@ -257,7 +259,7 @@ if generate_btn:
             width, height = (720, 1280) if is_short else (1280, 720)
             target_words = int(duration * 135) if not is_short else int(duration * 60 * 2.2)
             
-            update_progress(5, "🤖 Step 1/5: Discovering available model & generating Gemini script...")
+            update_progress(5, "🤖 Step 1/5: Connecting to Gemini 3.8 Flash & generating script...")
             
             data = generate_script_with_gemini(topic, target_words, style)
 
