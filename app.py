@@ -142,27 +142,25 @@ with col_action2:
         st.session_state.generated_data = None
         st.rerun()
 
-# REAL Gemini API Script Generator with fallback model check
+# Dynamic Model Discovery & Gemini Script Generator
 def generate_script_with_gemini(user_prompt, target_word_count, tone_style):
     if "GEMINI_API_KEY" not in st.secrets:
         raise ValueError("GEMINI_API_KEY is missing from Streamlit Secrets! Please add it.")
     
     genai.configure(api_key=st.secrets["GEMINI_API_KEY"])
     
-    # Automatically try available models to avoid 404
-    model_names = ["gemini-1.5-flash", "gemini-1.5-pro", "gemini-pro"]
-    model = None
-    for name in model_names:
-        try:
-            m = genai.GenerativeModel(name)
-            # Test brief call or just select it
-            model = m
-            break
-        except:
-            continue
-            
-    if not model:
-        model = genai.GenerativeModel("gemini-1.5-flash")
+    # Auto-detect available generative models
+    target_model = None
+    for m in genai.list_models():
+        if 'generateContent' in m.supported_generation_methods:
+            if 'flash' in m.name or 'pro' in m.name:
+                target_model = m.name
+                break
+                
+    if not target_model:
+        target_model = 'gemini-1.5-flash'
+        
+    model = genai.GenerativeModel(target_model)
 
     prompt = f"""
     You are an expert professional video scriptwriter. 
@@ -171,7 +169,7 @@ def generate_script_with_gemini(user_prompt, target_word_count, tone_style):
     Target word count: approximately {target_word_count} words.
     
     Provide your output strictly in valid JSON format with the following keys:
-    1. "script": A 100% unique, detailed, human-like video script explicitly about this exact topic. If it's a tutorial or recipe, give clear steps. No looping or repetitive filler text.
+    1. "script": A 100% unique, detailed, human-like video script explicitly about this exact topic. If it's a tutorial or guide, give clear steps. No looping or repetitive filler text.
     2. "hooks": An array of 3 catchy viral short hooks.
     3. "search_keywords": An array of 5 precise English keywords for fetching relevant images.
     4. "tags": A comma-separated string of SEO tags.
@@ -259,7 +257,7 @@ if generate_btn:
             width, height = (720, 1280) if is_short else (1280, 720)
             target_words = int(duration * 135) if not is_short else int(duration * 60 * 2.2)
             
-            update_progress(5, "🤖 Step 1/5: Gemini AI generating precise custom script...")
+            update_progress(5, "🤖 Step 1/5: Discovering available model & generating Gemini script...")
             
             data = generate_script_with_gemini(topic, target_words, style)
 
