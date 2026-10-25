@@ -149,7 +149,6 @@ def generate_script_with_gemini(user_prompt, target_word_count, tone_style):
     
     genai.configure(api_key=st.secrets["GEMINI_API_KEY"])
     
-    # Priority list of latest stable Gemini models
     candidate_models = ["gemini-3.8-flash", "gemini-1.5-flash", "gemini-pro"]
     selected_model_name = "gemini-3.8-flash"
     
@@ -259,7 +258,7 @@ if generate_btn:
             width, height = (720, 1280) if is_short else (1280, 720)
             target_words = int(duration * 135) if not is_short else int(duration * 60 * 2.2)
             
-            update_progress(5, "🤖 Step 1/5: Connecting to Gemini 3.8 Flash & generating script...")
+            update_progress(5, "🤖 Step 1/5: Connecting to Gemini & generating script...")
             
             data = generate_script_with_gemini(topic, target_words, style)
 
@@ -276,7 +275,7 @@ if generate_btn:
             probe_cmd = f"ffprobe -v error -show_entries format=duration -of default=noprint_wrappers=1:nokey=1 {audio_final}"
             final_audio_dur = float(subprocess.check_output(probe_cmd, shell=True).decode('utf-8').strip())
             
-            update_progress(35, "🌐 Step 3/5: Downloading HD visual assets matching Gemini keywords...")
+            update_progress(35, "🌐 Step 3/5: Downloading HD visual assets...")
 
             fps = 24
             total_frames = int(fps * final_audio_dur)
@@ -410,30 +409,33 @@ if st.session_state.generated_data:
     res = st.session_state.generated_data
     st.markdown("---")
     
-    col_left, col_right = st.columns([1, 1])
-    
-    with col_left:
-        st.subheader(f"📺 Final Video Output ({res['duration']:.1f}s)")
-        st.video(res["video_path"])
+    if os.path.exists(res["video_path"]):
+        col_left, col_right = st.columns([1, 1])
         
-        file_label = "Shorts_MP4" if res["is_short"] else "Video_MP4"
-        with open(res["video_path"], "rb") as f:
-            st.download_button(
-                label=f"⬇️ Download {file_label}",
-                data=f,
-                file_name=f"AI_{file_label}_{res['topic'][:10].replace(' ', '_')}.mp4",
-                mime="video/mp4",
-                use_container_width=True
-            )
+        with col_left:
+            st.subheader(f"📺 Final Video Output ({res['duration']:.1f}s)")
+            st.video(res["video_path"])
             
-    with col_right:
-        st.subheader("🎯 High-CTR Short Viral Hooks")
-        for idx, hook in enumerate(res["hooks"], 1):
-            st.info(f"**Hook {idx}:** {hook}")
-            
-        st.subheader("📌 Highly Related SEO Tags & Keywords")
-        st.code(res["tags"], language="text")
+            file_label = "Shorts_MP4" if res["is_short"] else "Video_MP4"
+            with open(res["video_path"], "rb") as f:
+                st.download_button(
+                    label=f"⬇️ Download {file_label}",
+                    data=f,
+                    file_name=f"AI_{file_label}_{res['topic'][:10].replace(' ', '_')}.mp4",
+                    mime="video/mp4",
+                    use_container_width=True
+                )
+                
+        with col_right:
+            st.subheader("🎯 High-CTR Short Viral Hooks")
+            for idx, hook in enumerate(res["hooks"], 1):
+                st.info(f"**Hook {idx}:** {hook}")
+                
+            st.subheader("📌 Highly Related SEO Tags & Keywords")
+            st.code(res["tags"], language="text")
 
-    st.markdown("---")
-    st.subheader("🎙️ Generated Voiceover Script")
-    st.text_area("Copy Script Text:", res["script"], height=180)
+        st.markdown("---")
+        st.subheader("🎙️ Generated Voiceover Script")
+        st.text_area("Copy Script Text:", res["script"], height=180)
+    else:
+        st.warning("⚠️ The generated video file was cleared or expired from the temporary storage. Please click 'Generate AI Video Now' again to recreate it instantly.")
