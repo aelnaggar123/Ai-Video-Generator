@@ -196,24 +196,18 @@ def generate_script_with_gemini(user_prompt, target_word_count, tone_style):
     }
 
 def create_step_visual_frame(width, height, step_title, step_desc):
-    # Generates a dynamic visual slide representing a computer screen / settings panel
     img = Image.new("RGB", (width, height), color=(15, 23, 42))
     draw = ImageDraw.Draw(img)
     
-    # Outer window frame styling
     draw.rectangle([30, 30, width - 30, height - 30], outline=(51, 65, 85), width=4)
-    # Title bar
     draw.rectangle([30, 30, width - 30, 90], fill=(30, 41, 59))
     
-    # Window dots (Mac/Windows style)
     draw.ellipse([50, 50, 70, 70], fill=(239, 68, 68))
     draw.ellipse([85, 50, 105, 70], fill=(234, 179, 8))
     draw.ellipse([120, 50, 140, 70], fill=(34, 197, 94))
     
-    # Draw Step Title inside window header
     draw.text((170, 48), "A & W Studio - Tutorial Guide", fill=(148, 163, 184))
     
-    # Center Card / Panel for the Step
     card_margin_x = 80
     card_margin_y = 130
     draw.rounded_rectangle(
@@ -224,10 +218,8 @@ def create_step_visual_frame(width, height, step_title, step_desc):
         width=3
     )
     
-    # Text inside card
     draw.text((card_margin_x + 40, card_margin_y + 40), "💡 " + step_title.upper(), fill=(248, 250, 252))
     
-    # Wrap description text into lines
     words = step_desc.split()
     line = ""
     y_text = card_margin_y + 110
@@ -316,7 +308,6 @@ if generate_btn:
             audio_combined = "combined_audio.mp3"
             final_mp4 = "final_generated_video.mp4"
             
-            # Break script into segments for changing visuals per step
             sentences = [s.strip() for s in data['script'].split('.') if len(s.strip()) > 5]
             if not sentences:
                 sentences = [data['script']]
@@ -325,13 +316,11 @@ if generate_btn:
             out = cv2.VideoWriter(video_no_audio, fourcc, fps, (width, height))
 
             frames_per_segment = max(1, total_frames // len(sentences))
-            current_sentence_idx = 0
 
             for frame_num in range(total_frames):
                 seg_idx = min(frame_num // frames_per_segment, len(sentences) - 1)
                 curr_text = sentences[seg_idx]
                 
-                # Generate visual frame representing this specific step/sentence
                 img = create_step_visual_frame(width, height, f"Step {seg_idx + 1}: Guide", curr_text)
                 frame_np = np.array(img)
                 cv_bgr_frame = cv2.cvtColor(frame_np, cv2.COLOR_RGB2BGR)
@@ -434,6 +423,6 @@ if st.session_state.generated_data:
         st.subheader("📌 Highly Related SEO Tags & Keywords")
         st.code(res["tags"], language="text")
 
-    st.markdown---()
+    st.markdown("---")
     st.subheader("🎙️ Generated Voiceover Script")
     st.text_area("Copy Script Text:", res["script"], height=180)
