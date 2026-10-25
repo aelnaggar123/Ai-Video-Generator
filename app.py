@@ -142,27 +142,15 @@ with col_action2:
         st.session_state.generated_data = None
         st.rerun()
 
-# 100% Fail-Safe Dynamic Gemini Script Generator
+# Direct Gemini 3.8 Flash Script Generator
 def generate_script_with_gemini(user_prompt, target_word_count, tone_style):
     if "GEMINI_API_KEY" not in st.secrets:
         raise ValueError("GEMINI_API_KEY is missing from Streamlit Secrets! Please add it.")
     
     genai.configure(api_key=st.secrets["GEMINI_API_KEY"])
     
-    # Auto-discover working model dynamically to eliminate 404 errors completely
-    working_model_name = None
-    try:
-        for m in genai.list_models():
-            if 'generateContent' in m.supported_generation_methods:
-                working_model_name = m.name
-                break
-    except:
-        pass
-        
-    if not working_model_name:
-        working_model_name = 'gemini-pro'
-
-    model = genai.GenerativeModel(working_model_name)
+    # Using the exact recommended model by Google
+    model = genai.GenerativeModel("gemini-3.8-flash")
 
     prompt = f"""
     You are an expert professional video scriptwriter. 
@@ -258,7 +246,7 @@ if generate_btn:
             width, height = (720, 1280) if is_short else (1280, 720)
             target_words = int(duration * 135) if not is_short else int(duration * 60 * 2.2)
             
-            update_progress(5, "🤖 Step 1/5: Auto-detecting working Gemini model & generating script...")
+            update_progress(5, "🤖 Step 1/5: Connecting to Gemini 3.8 Flash...")
             
             data = generate_script_with_gemini(topic, target_words, style)
 
