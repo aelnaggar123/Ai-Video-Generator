@@ -142,26 +142,15 @@ with col_action2:
         st.session_state.generated_data = None
         st.rerun()
 
-# Ultra-Smart Model Selection & Gemini Script Generator
+# Ultra-Fast & Safe Gemini Script Generator
 def generate_script_with_gemini(user_prompt, target_word_count, tone_style):
     if "GEMINI_API_KEY" not in st.secrets:
         raise ValueError("GEMINI_API_KEY is missing from Streamlit Secrets! Please add it.")
     
     genai.configure(api_key=st.secrets["GEMINI_API_KEY"])
     
-    candidate_models = ["gemini-3.8-flash", "gemini-1.5-flash", "gemini-pro"]
-    selected_model_name = "gemini-3.8-flash"
-    
-    try:
-        available_models = [m.name for m in genai.list_models() if 'generateContent' in m.supported_generation_methods]
-        for cand in candidate_models:
-            if any(cand in m for m in available_models):
-                selected_model_name = cand
-                break
-    except:
-        pass
-        
-    model = genai.GenerativeModel(selected_model_name)
+    # Direct reliable flash model to prevent hanging
+    model = genai.GenerativeModel("gemini-1.5-flash")
 
     prompt = f"""
     You are an expert professional video scriptwriter. 
@@ -190,7 +179,7 @@ def fetch_guaranteed_web_photo(keyword, width, height, index=0):
     clean_kw = keyword.strip().replace(" ", "").lower()
     try:
         url_unsplash = f"https://source.unsplash.com/featured/{width}x{height}/?{clean_kw}&sig={index + 5}"
-        res = requests.get(url_unsplash, timeout=6)
+        res = requests.get(url_unsplash, timeout=5)
         if res.status_code == 200 and len(res.content) > 10000:
             return Image.open(BytesIO(res.content)).convert("RGB")
     except:
@@ -198,7 +187,7 @@ def fetch_guaranteed_web_photo(keyword, width, height, index=0):
     try:
         url_flickr = f"https://loremflickr.com/{width}/{height}/{clean_kw}?lock={index + 10}"
         headers = {"User-Agent": "Mozilla/5.0"}
-        res_fl = requests.get(url_flickr, headers=headers, timeout=6)
+        res_fl = requests.get(url_flickr, headers=headers, timeout=5)
         if res_fl.status_code == 200 and len(res_fl.content) > 10000:
             return Image.open(BytesIO(res_fl.content)).convert("RGB")
     except:
@@ -212,7 +201,7 @@ def fetch_royalty_free_music(output_path):
     ]
     for music_url in safe_audio_urls:
         try:
-            res = requests.get(music_url, timeout=10)
+            res = requests.get(music_url, timeout=8)
             if res.status_code == 200 and len(res.content) > 50000:
                 with open(output_path, "wb") as f:
                     f.write(res.content)
@@ -245,7 +234,6 @@ if generate_btn:
         status_container = st.empty()
         metric_container = st.empty()
         progress_bar = st.progress(0)
-        start_time = time.time()
         
         def update_progress(percent, text):
             val = max(0, min(100, int(percent)))
@@ -258,7 +246,7 @@ if generate_btn:
             width, height = (720, 1280) if is_short else (1280, 720)
             target_words = int(duration * 135) if not is_short else int(duration * 60 * 2.2)
             
-            update_progress(5, "🤖 Step 1/5: Connecting to Gemini & generating script...")
+            update_progress(5, "🤖 Step 1/5: Connecting to Gemini 1.5 Flash...")
             
             data = generate_script_with_gemini(topic, target_words, style)
 
@@ -403,7 +391,7 @@ if generate_btn:
             }
 
         except Exception as e:
-            st.error(f"An error occurred: {e}")
+            st.error(f"❌ An error occurred during generation: {e}")
 
 if st.session_state.generated_data:
     res = st.session_state.generated_data
