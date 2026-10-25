@@ -141,14 +141,30 @@ with col_action2:
         st.session_state.generated_data = None
         st.rerun()
 
-# 100% Stable Stable API v1 Endpoint (Using gemini-1.5-flash with v1 endpoint)
+# 100% Dynamic Model Discovery via REST API (No Guesswork)
 def generate_script_with_gemini(user_prompt, target_word_count, tone_style):
     if "GEMINI_API_KEY" not in st.secrets:
         raise ValueError("GEMINI_API_KEY is missing from Streamlit Secrets! Please add it.")
     
     api_key = st.secrets["GEMINI_API_KEY"]
-    # Using stable v1 endpoint with gemini-1.5-flash
-    url = f"https://generativelanguage.googleapis.com/v1/models/gemini-1.5-flash:generateContent?key={api_key}"
+    
+    # Step 1: List available models automatically from user account
+    list_url = f"https://generativelanguage.googleapis.com/v1beta/models?key={api_key}"
+    list_res = requests.get(list_url, timeout=15)
+    
+    target_model_path = "models/gemini-1.5-flash" # Default fallback
+    
+    if list_res.status_code == 200:
+        models_data = list_res.json().get("models", [])
+        for m in models_data:
+            name = m.get("name", "")
+            methods = m.get("supportedGenerationMethods", [])
+            if "generateContent" in methods:
+                target_model_path = name  # Pick the first actively supported model
+                break
+    
+    # Step 2: Generate Content using the discovered working model path
+    gen_url = f"https://generativelanguage.googleapis.com/v1beta/{target_model_path}:generateContent?key={api_key}"
     
     prompt = f"""Generate a video script about: "{user_prompt}". Tone: {tone_style}. Words: ~{target_word_count}.
     Return ONLY a valid JSON object with these exact keys:
@@ -165,11 +181,10 @@ def generate_script_with_gemini(user_prompt, target_word_count, tone_style):
     }
     
     headers = {"Content-Type": "application/json"}
-    
-    response = requests.post(url, json=payload, headers=headers, timeout=60)
+    response = requests.post(gen_url, json=payload, headers=headers, timeout=60)
     
     if response.status_code != 200:
-        raise Exception(f"API Error ({response.status_code}): {response.text}")
+        raise Exception(f"API Error ({response.status_code}) on {target_model_path}: {response.text}")
 
     res_data = response.json()
     text_res = res_data["candidates"][0]["content"]["parts"][0]["text"].strip()
@@ -252,7 +267,7 @@ if generate_btn:
             width, height = (720, 1280) if is_short else (1280, 720)
             target_words = int(duration * 135) if not is_short else int(duration * 60 * 2.2)
             
-            update_progress(5, "🤖 Step 1/5: Connecting via Stable v1 API...")
+            update_progress(5, "🤖 Step 1/5: Auto-discovering active model & generating script...")
             
             data = generate_script_with_gemini(topic, target_words, style)
 
