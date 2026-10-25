@@ -141,14 +141,14 @@ with col_action2:
         st.session_state.generated_data = None
         st.rerun()
 
-# 100% Stable Permanent Direct API Generator (Using gemini-pro stable endpoint)
+# 100% Stable Stable API v1 Endpoint (Using gemini-1.5-flash with v1 endpoint)
 def generate_script_with_gemini(user_prompt, target_word_count, tone_style):
     if "GEMINI_API_KEY" not in st.secrets:
         raise ValueError("GEMINI_API_KEY is missing from Streamlit Secrets! Please add it.")
     
     api_key = st.secrets["GEMINI_API_KEY"]
-    # Using gemini-pro endpoint which never triggers 404 deprecation errors
-    url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-pro:generateContent?key={api_key}"
+    # Using stable v1 endpoint with gemini-1.5-flash
+    url = f"https://generativelanguage.googleapis.com/v1/models/gemini-1.5-flash:generateContent?key={api_key}"
     
     prompt = f"""Generate a video script about: "{user_prompt}". Tone: {tone_style}. Words: ~{target_word_count}.
     Return ONLY a valid JSON object with these exact keys:
@@ -252,7 +252,7 @@ if generate_btn:
             width, height = (720, 1280) if is_short else (1280, 720)
             target_words = int(duration * 135) if not is_short else int(duration * 60 * 2.2)
             
-            update_progress(5, "🤖 Step 1/5: Connecting via Stable Direct API...")
+            update_progress(5, "🤖 Step 1/5: Connecting via Stable v1 API...")
             
             data = generate_script_with_gemini(topic, target_words, style)
 
