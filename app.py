@@ -85,11 +85,11 @@ with col_top1:
     topic = st.text_input(
         "💡 What is your video about?", 
         value="",
-        placeholder="Type naturally (e.g. how to change mouse pointer, python tutorial, wallpaper, etc.)..."
+        placeholder="Type any exact topic or question (e.g. how to change folder icon on windows 11)..."
     )
     style = st.selectbox(
         "🎭 Tone & Style:",
-        ["Informative & Engaging", "Excited & Joyful", "Storytelling & Inspiring", "Professional & Corporate", "Casual & Friendly"]
+        ["Informative & Engaging", "Professional & Corporate", "Educational & Clear", "Casual & Friendly"]
     )
 
 with col_top2:
@@ -97,9 +97,7 @@ with col_top2:
         "👨 US Male (Guy - Deep & Emotional)": "en-US-GuyNeural",
         "👩 US Female (Jenny - Friendly & Warm)": "en-US-JennyNeural",
         "👨 UK Male (Ryan - Clear & Professional)": "en-GB-RyanNeural",
-        "👩 UK Female (Sonia - Elegant & Expressive)": "en-GB-SoniaNeural",
-        "👦 Young Boy / Kid (Eric - Dynamic)": "en-US-EricNeural",
-        "👧 Kids / Young Girl (Ana - Bright)": "en-US-AnaNeural"
+        "👩 UK Female (Sonia - Elegant & Expressive)": "en-GB-SoniaNeural"
     }
     
     voice_option_label = st.selectbox(
@@ -141,67 +139,51 @@ with col_action2:
         st.session_state.generated_data = None
         st.rerun()
 
+# 100% Autonomous Pure LLM Script Generation (Zero Hardcoding)
 def generate_script_with_gemini(user_prompt, target_word_count, tone_style):
-    lower_prompt = user_prompt.lower()
+    if "GEMINI_API_KEY" not in st.secrets:
+        raise ValueError("GEMINI_API_KEY is missing from Streamlit Secrets! Please add it.")
     
-    # Smart context-aware generators for common intents if API takes a second
-    script_text = ""
-    if "mouse" in lower_prompt or "pointer" in lower_prompt or "ماوس" in lower_prompt:
-        script_text = (
-            f"Want to customize your computer experience by changing your mouse pointer? Here is the exact step-by-step guide! "
-            f"Step one: Press the Windows key on your keyboard and open your system Settings. "
-            f"Step two: Navigate to the Devices or Bluetooth and devices section, then click on Mouse. "
-            f"Step three: Look for Additional mouse options to open the classic mouse properties window. "
-            f"Step four: Go to the Pointers tab, select your preferred scheme or browse custom cursor files, and click Apply. "
-            f"And there you go! Your mouse pointer is now fully customized. Hit subscribe for more tech tips!"
-        )
-    elif "wallpaper" in lower_prompt or "خلفية" in lower_prompt:
-        script_text = (
-            f"Want to know how to change your desktop wallpaper in seconds? Let's fix that right now! "
-            f"Step one: Right-click anywhere on your empty desktop screen and select Personalize. "
-            f"Step two: In the settings window that opens, click on the Background tab. "
-            f"Step three: Choose whether you want a Picture, a solid color, or a dynamic slideshow. "
-            f"Step four: Simply browse and select your favorite image from your computer folders. "
-            f"And just like that, your desktop is completely refreshed! Don't forget to subscribe for more quick tips!"
-        )
-    else:
-        script_text = (
-            f"Welcome to today's ultimate guide on {user_prompt}! "
-            f"Let's break down the practical steps to achieve this efficiently. "
-            f"First, access your primary settings or dashboard interface. "
-            f"Second, follow the exact configuration options required for your setup. "
-            f"Finally, save your changes and test the results. "
-            f"Make sure to like and subscribe for more expert tutorials!"
-        )
+    api_key = st.secrets["GEMINI_API_KEY"]
+    target_model_path = "models/gemini-3.8-flash"
+    gen_url = f"https://generativelanguage.googleapis.com/v1beta/{target_model_path}:generateContent?key={api_key}"
+    
+    # Strict prompt demanding real, technical, structured steps without fluff
+    prompt = f"""You are an elite technical writer and tutorial creator. 
+The user is asking: "{user_prompt}".
+Tone & Style: {tone_style}.
+Requirements:
+1. Provide a precise, highly reliable, step-by-step technical tutorial script answering the user's exact question.
+2. DO NOT include generic welcome fluff, intros, or outro filler (no "welcome to today's guide").
+3. Get straight to the technical actions, menus, clicks, or code required.
+4. Keep the length around {target_word_count} words, structured clearly in logical sequential steps.
+"""
 
-    hooks = [
-        f"The easiest way to master {user_prompt}!",
-        f"Stop struggling with {user_prompt} and watch this!",
-        f"Pro tips for {user_prompt} in under 60 seconds!"
-    ]
-    keywords = ["tutorial", "guide", "computer", "settings"]
+    payload = {
+        "contents": [{
+            "parts": [{"text": prompt}]
+        }]
+    }
+    
+    headers = {"Content-Type": "application/json"}
+    
+    # Generous timeout (45s) since user wants real reliable data and doesn't mind waiting
+    response = requests.post(gen_url, json=payload, headers=headers, timeout=45)
+    
+    if response.status_code != 200:
+        raise Exception(f"API Error ({response.status_code}): {response.text}")
+
+    res_data = response.json()
+    script_text = res_data["candidates"][0]["content"]["parts"][0]["text"].strip()
+    
+    words_list = user_prompt.split()
+    keywords = words_list[:4] if len(words_list) >= 4 else ["tutorial", "guide", "tech"]
     tags = f"{user_prompt}, tutorial, guide, tech, 2026"
-
-    # Try Gemini API with ultra-fast timeout
-    if "GEMINI_API_KEY" in st.secrets:
-        try:
-            api_key = st.secrets["GEMINI_API_KEY"]
-            target_model_path = "models/gemini-3.8-flash"
-            gen_url = f"https://generativelanguage.googleapis.com/v1beta/{target_model_path}:generateContent?key={api_key}"
-            
-            prompt = f"Write an exact, direct, step-by-step technical tutorial script answering: '{user_prompt}'. Tone: {tone_style}. Give practical steps, no fluff, no conversational filler."
-
-            payload = {"contents": [{"parts": [{"text": prompt}]}]}
-            headers = {"Content-Type": "application/json"}
-            response = requests.post(gen_url, json=payload, headers=headers, timeout=10)
-            
-            if response.status_code == 200:
-                res_data = response.json()
-                api_script = res_data["candidates"][0]["content"]["parts"][0]["text"].strip()
-                if len(api_script) > 50:
-                    script_text = api_script
-        except Exception:
-            pass
+    hooks = [
+        f"Here is exactly how to solve: {user_prompt}!",
+        f"The definitive guide to {user_prompt}.",
+        f"Step-by-step masterclass on {user_prompt}."
+    ]
 
     return {
         "script": script_text,
@@ -214,14 +196,16 @@ def create_step_visual_frame(width, height, step_title, step_desc):
     img = Image.new("RGB", (width, height), color=(15, 23, 42))
     draw = ImageDraw.Draw(img)
     
+    # Window container border & title bar
     draw.rectangle([30, 30, width - 30, height - 30], outline=(51, 65, 85), width=4)
     draw.rectangle([30, 30, width - 30, 90], fill=(30, 41, 59))
     
+    # Mac/Win control dots
     draw.ellipse([50, 50, 70, 70], fill=(239, 68, 68))
     draw.ellipse([85, 50, 105, 70], fill=(234, 179, 8))
     draw.ellipse([120, 50, 140, 70], fill=(34, 197, 94))
     
-    draw.text((170, 48), "A & W Studio - Automated Video Engine", fill=(148, 163, 184))
+    draw.text((170, 48), "A & W Studio - Autonomous Technical Engine", fill=(148, 163, 184))
     
     card_margin_x = 80
     card_margin_y = 130
@@ -233,7 +217,7 @@ def create_step_visual_frame(width, height, step_title, step_desc):
         width=3
     )
     
-    draw.text((card_margin_x + 40, card_margin_y + 40), "💡 " + step_title.upper(), fill=(248, 250, 252))
+    draw.text((card_margin_x + 40, card_margin_y + 40), "📌 " + step_title.upper(), fill=(248, 250, 252))
     
     words = step_desc.split()
     line = ""
@@ -302,7 +286,7 @@ if generate_btn:
             width, height = (720, 1280) if is_short else (1280, 720)
             target_words = int(duration * 135) if not is_short else int(duration * 60 * 2.2)
             
-            update_progress(5, "🤖 Step 1/5: Synthesizing expert automated script...")
+            update_progress(5, "🤖 Step 1/5: Querying Gemini AI for deep technical tutorial...")
             data = generate_script_with_gemini(topic, target_words, style)
 
             update_progress(20, f"🎙️ Step 2/5: Synthesizing Realistic Human Voice ({selected_voice_code})...")
@@ -315,7 +299,7 @@ if generate_btn:
             probe_cmd = f"ffprobe -v error -show_entries format=duration -of default=noprint_wrappers=1:nokey=1 {audio_final}"
             final_audio_dur = float(subprocess.check_output(probe_cmd, shell=True).decode('utf-8').strip())
             
-            update_progress(35, "🎨 Step 3/5: Rendering automated step-by-step frames...")
+            update_progress(35, "🎨 Step 3/5: Rendering dynamic step-by-step visual frames...")
             fps = 24
             total_frames = int(fps * final_audio_dur)
             video_no_audio = "temp_video.mp4"
@@ -336,14 +320,14 @@ if generate_btn:
                 seg_idx = min(frame_num // frames_per_segment, len(sentences) - 1)
                 curr_text = sentences[seg_idx]
                 
-                img = create_step_visual_frame(width, height, f"Step {seg_idx + 1}: Automation Guide", curr_text)
+                img = create_step_visual_frame(width, height, f"Step {seg_idx + 1}: Technical Guide", curr_text)
                 frame_np = np.array(img)
                 cv_bgr_frame = cv2.cvtColor(frame_np, cv2.COLOR_RGB2BGR)
                 out.write(cv_bgr_frame)
                 
                 if frame_num % 120 == 0:
                     render_progress = 40 + int((frame_num / total_frames) * 30)
-                    update_progress(render_progress, f"🎥 Rendering visual sequence ({frame_num}/{total_frames})...")
+                    update_progress(render_progress, f"🎥 Rendering frame sequence ({frame_num}/{total_frames})...")
 
             out.release()
 
@@ -421,7 +405,7 @@ if st.session_state.generated_data:
         video_file_io = BytesIO(res["video_bytes"])
         st.video(video_file_io)
         
-        file_label = "Shorts_MP4" if res["is_short"] * 1 else "Video_MP4"
+        file_label = "Shorts_MP4" if res["is_short"] else "Video_MP4"
         st.download_button(
             label=f"⬇️ Download {file_label}",
             data=res["video_bytes"],
