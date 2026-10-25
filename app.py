@@ -11,6 +11,7 @@ import numpy as np
 import re
 from PIL import Image
 from io import BytesIO
+import google.generativeai as genai
 
 # Page Configuration
 st.set_page_config(
@@ -23,14 +24,11 @@ st.set_page_config(
 # Dark Elegant Theme CSS Injection
 st.markdown("""
     <style>
-    /* Main Background & Font */
     .stApp {
         background: linear-gradient(135deg, #0e1117 0%, #161b22 50%, #1a0e14 100%);
         color: #f0f6fc;
         font-family: 'Inter', system-ui, -apple-system, sans-serif;
     }
-    
-    /* Headers & Title */
     h1 {
         color: #ffffff !important;
         font-weight: 700 !important;
@@ -40,20 +38,12 @@ st.markdown("""
         color: #8b949e !important;
         font-size: 0.95rem !important;
     }
-    
-    /* Input Fields & Selectboxes */
     .stTextInput input, .stSelectbox > div > div, .stTextArea textarea {
         background-color: #161b22 !important;
         color: #f0f6fc !important;
         border: 1px solid #30363d !important;
         border-radius: 8px !important;
     }
-    .stTextInput input:focus, .stSelectbox > div > div:focus {
-        border-color: #8b0000 !important;
-        box-shadow: 0 0 8px rgba(139, 0, 0, 0.4) !important;
-    }
-
-    /* Buttons Style */
     .stButton > button[kind="primary"] {
         background: linear-gradient(135deg, #8b0000 0%, #5a0000 100%) !important;
         color: #ffffff !important;
@@ -68,16 +58,12 @@ st.markdown("""
         box-shadow: 0 6px 16px rgba(139, 0, 0, 0.5) !important;
         transform: translateY(-1px);
     }
-    
-    /* Containers & Cards */
     div[data-testid="stBlock"] {
         background-color: rgba(22, 27, 34, 0.6);
         border-radius: 12px;
         padding: 10px;
         border: 1px solid #21262d;
     }
-    
-    /* Horizontal Rule */
     hr {
         border-color: #30363d !important;
     }
@@ -156,70 +142,40 @@ with col_action2:
         st.session_state.generated_data = None
         st.rerun()
 
-# Universal Dynamic Engine for ANY Topic (Engineering, Tech, Food, Business, Science)
-def process_universal_content_engine(user_input, target_word_count):
-    raw = user_input.strip()
-
-    clean_topic = raw
-    prefixes = [
-        "how to make", "how to prepare", "how to", "e3mely", "e3mly", "y3lemny", "tare2et", "3amal", "3ayez", "3ayz", 
-        "video about", "shra7", "shrah", "explain", "at home", "fl beat", "fl bet", "اعملي", "شرح", "طريقة", "عمل", "في البيت"
-    ]
-    for p in prefixes:
-        clean_topic = re.sub(rf"(?i)\b{re.escape(p)}\b", "", clean_topic)
-    clean_topic = clean_topic.strip()
-    if not clean_topic:
-        clean_topic = raw
-
-    core_paragraphs = [
-        f"Welcome back everyone! Today, we are exploring an essential and comprehensive breakdown of {clean_topic}.",
-        f"Whether you are looking to master the fundamentals or advance your practical skills in {clean_topic}, understanding the core mechanics is key.",
-        f"Phase 1: Let's examine the foundational principles, setup requirements, and key variables needed to approach {clean_topic} effectively.",
-        f"Phase 2: When working through the process, pay close attention to structural planning, organization, and precision to avoid common pitfalls.",
-        f"Phase 3: Analyzing real-world applications and workflows allows us to optimize performance, save time, and achieve professional results.",
-        f"Phase 4: Reviewing final execution, verifying outputs, and maintaining high standards ensures long-term success.",
-        f"Apply these practical concepts directly to your work, and let us know your thoughts, questions, or results in the comments below!"
-    ]
+# REAL Gemini API Script Generator (No Fallbacks, Pure AI Intelligence)
+def generate_script_with_gemini(user_prompt, target_word_count, tone_style):
+    if "GEMINI_API_KEY" not in st.secrets:
+        raise ValueError("GEMINI_API_KEY is missing from Streamlit Secrets! Please add it.")
     
-    extension_tips = [
-        f"Consistency and attention to detail remain the most critical factors when executing {clean_topic}.",
-        f"Breaking complex tasks down into smaller, manageable milestones significantly improves overall efficiency.",
-        f"Always evaluate your progress periodically against your initial targets to maintain absolute control over the workflow.",
-        f"Leveraging modern tools and structured methodologies can streamline every single phase of {clean_topic}."
-    ]
+    genai.configure(api_key=st.secrets["GEMINI_API_KEY"])
+    model = genai.GenerativeModel("gemini-1.5-flash")
 
-    full_script = " ".join(core_paragraphs)
-    words = full_script.split()
+    prompt = f"""
+    You are an expert professional video scriptwriter. 
+    The user topic/request is: "{user_prompt}" (It might be in Franco-Arabic, Arabic, or English with slang or typos).
+    Tone & Style: {tone_style}.
+    Target word count: approximately {target_word_count} words.
     
-    tip_idx = 0
-    while len(words) < target_word_count:
-        tip = extension_tips[tip_idx % len(extension_tips)]
-        full_script += f" Furthermore, {tip[0].lower()}{tip[1:]}"
-        words = full_script.split()
-        tip_idx += 1
+    Provide your output strictly in valid JSON format with the following keys:
+    1. "script": A 100% unique, detailed, human-like video script explicitly about this exact topic. If it's a tutorial or recipe, give clear steps. No looping or repetitive filler text.
+    2. "hooks": An array of 3 catchy viral short hooks.
+    3. "search_keywords": An array of 5 precise English keywords for fetching relevant images.
+    4. "tags": A comma-separated string of SEO tags.
+    """
 
-    words_list = [w for w in re.findall(r'\b[a-zA-Z]{4,}\b', clean_topic.lower())]
-    if not words_list:
-        words_list = ["technology", "business", "workspace", "planning"]
-
-    search_keys = words_list[:3] + ["workspace", "professional", "strategy"]
-    hooks = [
-        f"Master {clean_topic} in simple, structured steps!",
-        f"Everything you need to know about professional {clean_topic}!",
-        f"The ultimate guide to succeeding with {clean_topic}!"
-    ]
-    tags = f"{clean_topic}, professional guide, tutorial, workflow, strategy, masterclass, expert tips"
-
-    return {
-        "script": full_script.strip(),
-        "search_keywords": search_keys,
-        "hooks": hooks,
-        "tags": tags
-    }
+    response = model.generate_content(prompt)
+    text_res = response.text.strip()
+    
+    # Clean markdown json blocks if returned by model
+    if text_res.startswith("```json"):
+        text_res = text_res[7:]
+    if text_res.endswith("```"):
+        text_res = text_res[:-3]
+        
+    return json.loads(text_res.strip())
 
 def fetch_guaranteed_web_photo(keyword, width, height, index=0):
     clean_kw = keyword.strip().replace(" ", "").lower()
-    
     try:
         url_unsplash = f"https://source.unsplash.com/featured/{width}x{height}/?{clean_kw}&sig={index + 5}"
         res = requests.get(url_unsplash, timeout=6)
@@ -227,31 +183,20 @@ def fetch_guaranteed_web_photo(keyword, width, height, index=0):
             return Image.open(BytesIO(res.content)).convert("RGB")
     except:
         pass
-
     try:
         url_flickr = f"https://loremflickr.com/{width}/{height}/{clean_kw}?lock={index + 10}"
-        headers = {"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64)"}
+        headers = {"User-Agent": "Mozilla/5.0"}
         res_fl = requests.get(url_flickr, headers=headers, timeout=6)
         if res_fl.status_code == 200 and len(res_fl.content) > 10000:
             return Image.open(BytesIO(res_fl.content)).convert("RGB")
     except:
         pass
-
-    try:
-        url_picsum = f"https://picsum.photos/seed/{clean_kw}{index}/{width}/{height}"
-        res_pic = requests.get(url_picsum, timeout=6)
-        if res_pic.status_code == 200 and len(res_pic.content) > 10000:
-            return Image.open(BytesIO(res_pic.content)).convert("RGB")
-    except:
-        pass
-
     return None
 
 def fetch_royalty_free_music(output_path):
     safe_audio_urls = [
         "https://cdn.pixabay.com/download/audio/2022/05/27/audio_1808fbf07a.mp3",
-        "https://cdn.pixabay.com/download/audio/2022/03/15/audio_c8c8a73467.mp3",
-        "https://cdn.pixabay.com/download/audio/2022/01/18/audio_d0a13f69d2.mp3"
+        "https://cdn.pixabay.com/download/audio/2022/03/15/audio_c8c8a73467.mp3"
     ]
     for music_url in safe_audio_urls:
         try:
@@ -301,9 +246,9 @@ if generate_btn:
             width, height = (720, 1280) if is_short else (1280, 720)
             target_words = int(duration * 135) if not is_short else int(duration * 60 * 2.2)
             
-            update_progress(5, "📝 Step 1/5: Processing topic intent & building structured script...")
+            update_progress(5, "🤖 Step 1/5: Gemini AI generating precise custom script...")
             
-            data = process_universal_content_engine(topic, target_words)
+            data = generate_script_with_gemini(topic, target_words, style)
 
             update_progress(20, f"🎙️ Step 2/5: Synthesizing Realistic Human Voice ({selected_voice_code})...")
 
@@ -318,7 +263,7 @@ if generate_btn:
             probe_cmd = f"ffprobe -v error -show_entries format=duration -of default=noprint_wrappers=1:nokey=1 {audio_final}"
             final_audio_dur = float(subprocess.check_output(probe_cmd, shell=True).decode('utf-8').strip())
             
-            update_progress(35, "🌐 Step 3/5: Downloading HD visual assets matching your topic...")
+            update_progress(35, "🌐 Step 3/5: Downloading HD visual assets matching Gemini keywords...")
 
             fps = 24
             total_frames = int(fps * final_audio_dur)
@@ -354,7 +299,7 @@ if generate_btn:
                     if img:
                         scene_images.append(img)
 
-            update_progress(55, "🎵 Step 4/5: Mixing royalty-free background music...")
+            update_progress(55, "🎵 Step 4/5: Mixing background music...")
             
             voice_to_use = audio_final
             if enable_bg_music:
@@ -367,7 +312,7 @@ if generate_btn:
                     except:
                         voice_to_use = audio_final
 
-            update_progress(70, "🎥 Step 5/5: Rendering full-length motion video...")
+            update_progress(70, "🎥 Step 5/5: Rendering video & burning subtitles...")
             
             if not custom_video_used and len(scene_images) > 0:
                 fourcc = cv2.VideoWriter_fourcc(*'mp4v')
@@ -398,7 +343,7 @@ if generate_btn:
 
                 video_to_merge = video_no_audio
                 if enable_subtitles:
-                    update_progress(92, "💬 Burning dynamic subtitle stream...")
+                    update_progress(92, "💬 Burning subtitle stream...")
                     try:
                         chunks = split_script_into_chunks(data['script'], max_words=4)
                         srt_content = ""
