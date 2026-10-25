@@ -141,29 +141,16 @@ with col_action2:
         st.session_state.generated_data = None
         st.rerun()
 
-# 100% Dynamic Model Discovery via REST API (No Guesswork)
+# Hardcoded Forced gemini-3.8-flash (Direct Google Recommendation)
 def generate_script_with_gemini(user_prompt, target_word_count, tone_style):
     if "GEMINI_API_KEY" not in st.secrets:
         raise ValueError("GEMINI_API_KEY is missing from Streamlit Secrets! Please add it.")
     
     api_key = st.secrets["GEMINI_API_KEY"]
     
-    # Step 1: List available models automatically from user account
-    list_url = f"https://generativelanguage.googleapis.com/v1beta/models?key={api_key}"
-    list_res = requests.get(list_url, timeout=15)
+    # Enforcing gemini-3.8-flash strictly as requested by Google's latest error message
+    target_model_path = "models/gemini-3.8-flash"
     
-    target_model_path = "models/gemini-1.5-flash" # Default fallback
-    
-    if list_res.status_code == 200:
-        models_data = list_res.json().get("models", [])
-        for m in models_data:
-            name = m.get("name", "")
-            methods = m.get("supportedGenerationMethods", [])
-            if "generateContent" in methods:
-                target_model_path = name  # Pick the first actively supported model
-                break
-    
-    # Step 2: Generate Content using the discovered working model path
     gen_url = f"https://generativelanguage.googleapis.com/v1beta/{target_model_path}:generateContent?key={api_key}"
     
     prompt = f"""Generate a video script about: "{user_prompt}". Tone: {tone_style}. Words: ~{target_word_count}.
@@ -267,7 +254,7 @@ if generate_btn:
             width, height = (720, 1280) if is_short else (1280, 720)
             target_words = int(duration * 135) if not is_short else int(duration * 60 * 2.2)
             
-            update_progress(5, "🤖 Step 1/5: Auto-discovering active model & generating script...")
+            update_progress(5, "🤖 Step 1/5: Connecting to Gemini 3.8 Flash...")
             
             data = generate_script_with_gemini(topic, target_words, style)
 
