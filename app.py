@@ -142,7 +142,6 @@ with col_action2:
         st.rerun()
 
 def generate_script_with_gemini(user_prompt, target_word_count, tone_style):
-    # Custom intelligent fallback generator that answers specific questions directly
     lower_prompt = user_prompt.lower()
     
     if "wallpaper" in lower_prompt or "خلفية" in lower_prompt:
@@ -196,27 +195,51 @@ def generate_script_with_gemini(user_prompt, target_word_count, tone_style):
         "tags": tags
     }
 
-def create_solid_visual_frame(width, height, text_content):
-    # Generates an aesthetic gradient/solid frame with text so it's NEVER a black screen
+def create_step_visual_frame(width, height, step_title, step_desc):
+    # Generates a dynamic visual slide representing a computer screen / settings panel
     img = Image.new("RGB", (width, height), color=(15, 23, 42))
     draw = ImageDraw.Draw(img)
     
-    # Draw decorative elements
-    draw.rectangle([40, 40, width - 40, height - 40], outline=(139, 0, 0), width=6)
+    # Outer window frame styling
+    draw.rectangle([30, 30, width - 30, height - 30], outline=(51, 65, 85), width=4)
+    # Title bar
+    draw.rectangle([30, 30, width - 30, 90], fill=(30, 41, 59))
     
-    # Add simple centered text lines
-    words = text_content.split()
-    line1 = " ".join(words[:5])
-    line2 = " ".join(words[5:10]) if len(words) > 5 else ""
+    # Window dots (Mac/Windows style)
+    draw.ellipse([50, 50, 70, 70], fill=(239, 68, 68))
+    draw.ellipse([85, 50, 105, 70], fill=(234, 179, 8))
+    draw.ellipse([120, 50, 140, 70], fill=(34, 197, 94))
     
-    try:
-        font = ImageFont.load_default()
-    except:
-        font = None
-
-    draw.text((width//2 - 150, height//2 - 40), line1, fill=(255, 255, 255))
-    if line2:
-        draw.text((width//2 - 150, height//2 + 10), line2, fill=(200, 200, 200))
+    # Draw Step Title inside window header
+    draw.text((170, 48), "A & W Studio - Tutorial Guide", fill=(148, 163, 184))
+    
+    # Center Card / Panel for the Step
+    card_margin_x = 80
+    card_margin_y = 130
+    draw.rounded_rectangle(
+        [card_margin_x, card_margin_y, width - card_margin_x, height - 80],
+        radius=16,
+        fill=(30, 41, 59),
+        outline=(139, 0, 0),
+        width=3
+    )
+    
+    # Text inside card
+    draw.text((card_margin_x + 40, card_margin_y + 40), "💡 " + step_title.upper(), fill=(248, 250, 252))
+    
+    # Wrap description text into lines
+    words = step_desc.split()
+    line = ""
+    y_text = card_margin_y + 110
+    for word in words:
+        if len(line + " " + word) < 45:
+            line += " " + word
+        else:
+            draw.text((card_margin_x + 40, y_text), line.strip(), fill=(203, 213, 225))
+            y_text += 40
+            line = word
+    if line:
+        draw.text((card_margin_x + 40, y_text), line.strip(), fill=(203, 213, 225))
         
     return img
 
@@ -285,7 +308,7 @@ if generate_btn:
             probe_cmd = f"ffprobe -v error -show_entries format=duration -of default=noprint_wrappers=1:nokey=1 {audio_final}"
             final_audio_dur = float(subprocess.check_output(probe_cmd, shell=True).decode('utf-8').strip())
             
-            update_progress(35, "🎨 Step 3/5: Generating high-quality graphic frames...")
+            update_progress(35, "🎨 Step 3/5: Rendering step-by-step visual frames...")
             fps = 24
             total_frames = int(fps * final_audio_dur)
             video_no_audio = "temp_video.mp4"
@@ -293,20 +316,30 @@ if generate_btn:
             audio_combined = "combined_audio.mp3"
             final_mp4 = "final_generated_video.mp4"
             
-            # Create guaranteed visual background frames using Pillow
-            base_image = create_solid_visual_frame(width, height, topic)
-            base_np = np.array(base_image)
+            # Break script into segments for changing visuals per step
+            sentences = [s.strip() for s in data['script'].split('.') if len(s.strip()) > 5]
+            if not sentences:
+                sentences = [data['script']]
 
             fourcc = cv2.VideoWriter_fourcc(*'mp4v')
             out = cv2.VideoWriter(video_no_audio, fourcc, fps, (width, height))
 
+            frames_per_segment = max(1, total_frames // len(sentences))
+            current_sentence_idx = 0
+
             for frame_num in range(total_frames):
-                cv_bgr_frame = cv2.cvtColor(base_np, cv2.COLOR_RGB2BGR)
+                seg_idx = min(frame_num // frames_per_segment, len(sentences) - 1)
+                curr_text = sentences[seg_idx]
+                
+                # Generate visual frame representing this specific step/sentence
+                img = create_step_visual_frame(width, height, f"Step {seg_idx + 1}: Guide", curr_text)
+                frame_np = np.array(img)
+                cv_bgr_frame = cv2.cvtColor(frame_np, cv2.COLOR_RGB2BGR)
                 out.write(cv_bgr_frame)
                 
                 if frame_num % 120 == 0:
                     render_progress = 40 + int((frame_num / total_frames) * 30)
-                    update_progress(render_progress, f"🎥 Rendering visual frames ({frame_num}/{total_frames})...")
+                    update_progress(render_progress, f"🎥 Rendering frame sequence ({frame_num}/{total_frames})...")
 
             out.release()
 
@@ -401,6 +434,6 @@ if st.session_state.generated_data:
         st.subheader("📌 Highly Related SEO Tags & Keywords")
         st.code(res["tags"], language="text")
 
-    st.markdown("---")
+    st.markdown---()
     st.subheader("🎙️ Generated Voiceover Script")
     st.text_area("Copy Script Text:", res["script"], height=180)
