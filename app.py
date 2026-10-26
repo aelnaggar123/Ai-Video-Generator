@@ -179,7 +179,6 @@ CRITICAL INSTRUCTIONS:
             time.sleep(2)
             continue
             
-    # Comprehensive intelligent fallback based on user input
     if not script_text or len(script_text.split()) < 35:
         lower_p = user_prompt.lower()
         if "fera5" in lower_p or "فراخ" in lower_p or "دجاج" in lower_p or "panne" in lower_p or "بانيه" in lower_p:
@@ -227,9 +226,8 @@ CRITICAL INSTRUCTIONS:
         "tags": tags
     }
 
-# 100% Reliable Dynamic Cinematic Visual Engine (Zero API drops, stunning shifting studio backgrounds)
+# 100% Reliable Dynamic Cinematic Visual Engine
 def generate_dynamic_studio_frame(width, height, step_num, total_steps, topic_text):
-    # Dynamic shifting gradient colors per step
     r = int((step_num * 40) % 200 + 30)
     g = int((step_num * 20) % 100 + 20)
     b = int((step_num * 60) % 220 + 35)
@@ -237,7 +235,6 @@ def generate_dynamic_studio_frame(width, height, step_num, total_steps, topic_te
     img = Image.new("RGB", (width, height), color=(r, g, b))
     draw = ImageDraw.Draw(img)
     
-    # Modern cinematic framing
     draw.rectangle([35, 35, width - 35, height - 35], outline=(220, 38, 38), width=5)
     draw.rectangle([70, 70, width - 70, 160], fill=(15, 23, 42))
     
@@ -298,7 +295,6 @@ if generate_btn:
             is_short = (video_format == "YouTube Short (30-59 sec)")
             width, height = (720, 1280) if is_short else (1280, 720)
             
-            # Accurate word count mapping directly to slider duration (135 words/min)
             target_words = int(duration * 135) if not is_short else int(duration * 60 * 2.2)
             
             update_progress(5, f"🤖 Step 1/5: Requesting full {duration}-minute detailed script from Gemini...")
@@ -315,7 +311,6 @@ if generate_btn:
             final_audio_dur = float(subprocess.check_output(probe_cmd, shell=True).decode('utf-8').strip())
             
             update_progress(30, f"🎨 Step 3/5: Rendering cinematic studio visual frames for {final_audio_dur:.1f}s...")
-            sentences = [s.strip() for s in data['script'].split('.') if len(s.strip()] # fixed below safely
             sentences = [s.strip() for s in data['script'].split('.') if len(s.strip()) > 5]
             if not sentences:
                 sentences = [data['script']]
