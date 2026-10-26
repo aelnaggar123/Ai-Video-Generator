@@ -85,7 +85,7 @@ with col_top1:
     topic = st.text_input(
         "💡 What is your video about?", 
         value="",
-        placeholder="Type any topic in Arabic, Franco, or English (e.g. tare2et 3amal el bashamel)..."
+        placeholder="Type any topic in Arabic, Franco, or English (e.g. tare2et 3amal el chicken panne)..."
     )
     style = st.selectbox(
         "🎭 Tone & Style:",
@@ -139,7 +139,7 @@ with col_action2:
         st.session_state.generated_data = None
         st.rerun()
 
-# Strict script generator with intelligent fallback for specific topics
+# 100% Strict Pure Gemini Script Generator
 def generate_script_with_gemini(user_prompt, target_word_count, tone_style):
     if "GEMINI_API_KEY" not in st.secrets:
         raise ValueError("GEMINI_API_KEY is missing from Streamlit Secrets! Please add it.")
@@ -153,7 +153,7 @@ The user wants a detailed, practical, step-by-step tutorial script about: "{user
 Tone & Style: {tone_style}.
 STRICT RULES:
 1. NEVER use generic filler sentences, robot intros, or cliché phrases.
-2. GIVE THE ACTUAL SPECIFIC DETAILS: If it's about making Bechamel ("tare2et 3amal el bashamel"), explicitly state the proportions of flour, butter, milk, broth, stirring technique, seasoning with nutmeg, and achieving creamy texture.
+2. GIVE THE ACTUAL SPECIFIC DETAILS and concrete steps (exact ingredients, measures, techniques, and secrets).
 3. Length must be substantial (around {target_word_count} words) to fill the requested duration naturally.
 4. Write entirely in clear English suitable for professional voiceover narration.
 """
@@ -179,25 +179,13 @@ STRICT RULES:
             time.sleep(2)
             continue
             
-    # Smart topic-aware specific fallbacks
     if not script_text or len(script_text.split()) < 40:
-        lower_p = user_prompt.lower()
-        if "bashamel" in lower_p or "باشاميل" in lower_p or "بشاميل" in lower_p:
-            script_text = (
-                f"Here is how to make creamy, lump-free restaurant-quality bechamel sauce from scratch. "
-                f"Step 1: Melt equal parts of butter and all-purpose flour—about three tablespoons each—in a saucepan over medium heat, stirring constantly for two minutes to cook the raw flour taste. "
-                f"Step 2: Gradually pour in warm milk, about three cups in total, while whisking vigorously to prevent any lumps from forming. "
-                f"Step 3: Add a splash of chicken or meat broth to elevate the rich flavor profile of the sauce. "
-                f"Step 4: Season with salt, white pepper, and a pinch of freshly grated nutmeg for that authentic aroma. "
-                f"Step 5: Simmer the mixture on low heat, stirring continuously until it thickens into a smooth, velvety consistency, then remove from heat and use immediately."
-            )
-        else:
-            script_text = (
-                f"Welcome to this comprehensive tutorial on {user_prompt}. "
-                f"Step 1: Prepare all necessary ingredients and setup your workspace properly. "
-                f"Step 2: Follow the core sequential actions with absolute precision and care. "
-                f"Step 3: Review your final outcome, make any necessary adjustments, and enjoy your successful results."
-            )
+        script_text = (
+            f"Here is the definitive guide to mastering {user_prompt} with complete precision. "
+            f"Step 1: Prepare all core components, exact measurements, and required tools. "
+            f"Step 2: Execute the process methodically, applying expert techniques at every individual stage. "
+            f"Step 3: Review your outcome carefully, make necessary refinements, and enjoy your successful results."
+        )
 
     words_list = user_prompt.split()
     keywords = words_list[:4] if len(words_list) >= 4 else ["guide", "tutorial"]
@@ -215,37 +203,62 @@ STRICT RULES:
         "tags": tags
     }
 
-def create_clean_text_frame(width, height, title_text, desc_text):
-    # Professional dark sleek background (No random images, pure clean studio look)
-    img = Image.new("RGB", (width, height), color=(10, 15, 30))
+# Fetch dynamic AI-generated image from Pollinations.ai matching each step
+def fetch_ai_visual_image(prompt_text, width, height):
+    try:
+        clean_prompt = re.sub(r'[^a-zA-Z0-9\s]', '', prompt_text)[:90]
+        encoded_prompt = requests.utils.quote(f"cinematic professional food photography, vibrant lighting, highly detailed, {clean_prompt}")
+        img_url = f"https://image.pollinations.ai/prompt/{encoded_prompt}?width={width}&height={height}&nologo=true"
+        
+        response = requests.get(img_url, timeout=12)
+        if response.status_code == 200 and len(response.content) > 2000:
+            image_stream = BytesIO(response.content)
+            img = Image.open(image_stream).convert("RGB")
+            return img
+    except:
+        pass
+    
+    fallback_img = Image.new("RGB", (width, height), color=(15, 23, 42))
+    return fallback_img
+
+def create_ai_step_frame(width, height, step_title, step_desc, bg_image=None):
+    if bg_image:
+        img = bg_image.resize((width, height)).copy()
+        # Dark overlay to make text crystal clear
+        overlay = Image.new("RGBA", (width, height), (0, 0, 0, 150))
+        img = Image.alpha_composite(img.convert("RGBA"), overlay).convert("RGB")
+    else:
+        img = Image.new("RGB", (width, height), color=(15, 23, 42))
+
     draw = ImageDraw.Draw(img)
     
-    # Elegant minimal card frame
-    card_margin = 60
+    # Sleek bottom info card for step instructions
+    card_margin_x = 50
+    card_height = 240
+    card_margin_y = height - card_height - 60
+    
     draw.rounded_rectangle(
-        [card_margin, card_margin, width - card_margin, height - card_margin],
-        radius=20,
-        fill=(20, 27, 45),
+        [card_margin_x, card_margin_y, width - card_margin_x, height - 60],
+        radius=16,
+        fill=(15, 23, 42),
         outline=(139, 0, 0),
-        width=4
+        width=3
     )
     
-    # Title header
-    draw.text((card_margin + 40, card_margin + 40), "📌 " + title_text.upper(), fill=(255, 255, 255))
+    draw.text((card_margin_x + 30, card_margin_y + 25), "✨ " + step_title.upper(), fill=(255, 255, 255))
     
-    # Description text wrapping
-    words = desc_text.split()
+    words = step_desc.split()
     line = ""
-    y_text = card_margin + 120
+    y_text = card_margin_y + 75
     for word in words:
-        if len(line + " " + word) < 45:
+        if len(line + " " + word) < 48:
             line += " " + word
         else:
-            draw.text((card_margin + 40, y_text), line.strip(), fill=(226, 232, 240))
-            y_text += 50
+            draw.text((card_margin_x + 30, y_text), line.strip(), fill=(226, 232, 240))
+            y_text += 35
             line = word
     if line:
-        draw.text((card_margin + 40, y_text), line.strip(), fill=(226, 232, 240))
+        draw.text((card_margin_x + 30, y_text), line.strip(), fill=(226, 232, 240))
         
     return img
 
@@ -302,10 +315,10 @@ if generate_btn:
             
             target_words = int(duration * 135) if not is_short else int(duration * 60 * 2.2)
             
-            update_progress(5, f"🤖 Step 1/5: Requesting precise tutorial script for {duration} mins...")
+            update_progress(5, f"🤖 Step 1/6: Requesting expert tutorial script for {duration} mins...")
             data = generate_script_with_gemini(topic, target_words, style)
 
-            update_progress(20, f"🎙️ Step 2/5: Synthesizing voiceover matching target duration...")
+            update_progress(15, f"🎙️ Step 2/6: Synthesizing voiceover matching duration...")
             audio_raw = "raw_human_voice.mp3"
             audio_final = "final_voice.mp3"
             
@@ -315,17 +328,24 @@ if generate_btn:
             probe_cmd = f"ffprobe -v error -show_entries format=duration -of default=noprint_wrappers=1:nokey=1 {audio_final}"
             final_audio_dur = float(subprocess.check_output(probe_cmd, shell=True).decode('utf-8').strip())
             
-            update_progress(35, f"🎨 Step 3/5: Rendering clean studio visual frames for {final_audio_dur:.1f}s...")
+            update_progress(30, f"🎨 Step 3/6: Generating AI Background Images for each step...")
+            sentences = [s.strip() for s in data['script'].split('.') if len(s.strip()) > 5]
+            if not sentences:
+                sentences = [data['script']]
+
+            step_images = []
+            for idx, sent in enumerate(sentences):
+                update_progress(30 + int((idx / len(sentences)) * 15), f"🖼️ Generating AI Art frame {idx+1}/{len(sentences)}...")
+                ai_img = fetch_ai_visual_image(sent, width, height)
+                step_images.append(ai_img)
+
+            update_progress(50, f"🎥 Step 4/6: Rendering AI video frames with background visuals...")
             fps = 24
             total_frames = int(fps * final_audio_dur)
             video_no_audio = "temp_video.mp4"
             video_with_subtitles = "temp_subtitles.mp4"
             audio_combined = "combined_audio.mp3"
             final_mp4 = "final_generated_video.mp4"
-            
-            sentences = [s.strip() for s in data['script'].split('.') if len(s.strip()) > 5]
-            if not sentences:
-                sentences = [data['script']]
 
             fourcc = cv2.VideoWriter_fourcc(*'mp4v')
             out = cv2.VideoWriter(video_no_audio, fourcc, fps, (width, height))
@@ -335,19 +355,20 @@ if generate_btn:
             for frame_num in range(total_frames):
                 seg_idx = min(frame_num // frames_per_segment, len(sentences) - 1)
                 curr_text = sentences[seg_idx]
+                curr_bg = step_images[seg_idx] if seg_idx < len(step_images) else None
                 
-                img = create_clean_text_frame(width, height, f"Step {seg_idx + 1}", curr_text)
+                img = create_ai_step_frame(width, height, f"Step {seg_idx + 1}", curr_text, curr_bg)
                 frame_np = np.array(img)
                 cv_bgr_frame = cv2.cvtColor(frame_np, cv2.COLOR_RGB2BGR)
                 out.write(cv_bgr_frame)
                 
                 if frame_num % 120 == 0:
-                    render_progress = 40 + int((frame_num / total_frames) * 30)
+                    render_progress = 50 + int((frame_num / total_frames) * 25)
                     update_progress(render_progress, f"🎥 Rendering frame sequence ({frame_num}/{total_frames})...")
 
             out.release()
 
-            update_progress(75, "🎵 Step 4/5: Mixing background music...")
+            update_progress(75, "🎵 Step 5/6: Mixing background music...")
             voice_to_use = audio_final
             if enable_bg_music:
                 bg_music_file = "bg_music.mp3"
@@ -358,7 +379,7 @@ if generate_btn:
                     except:
                         voice_to_use = audio_final
 
-            update_progress(85, "🎥 Step 5/5: Burning professional dynamic subtitles...")
+            update_progress(85, "🎥 Step 6/6: Burning professional dynamic subtitles...")
             video_to_merge = video_no_audio
             if enable_subtitles:
                 try:
@@ -379,7 +400,6 @@ if generate_btn:
                     with open("subtitles.srt", "w", encoding="utf-8") as f:
                         f.write(srt_content)
                         
-                    # High visibility prominent subtitles styling
                     font_size = 24 if is_short else 32
                     subtitle_filter = f"subtitles=subtitles.srt:force_style='FontSize={font_size},PrimaryColour=&H0000FFFF,OutlineColour=&H00000000,BackColour=&H80000000,BorderStyle=4,Alignment=2,MarginV=80'"
                     subprocess.run(f"ffmpeg -y -i {video_no_audio} -vf \"{subtitle_filter}\" -c:v libx264 -preset ultrafast {video_with_subtitles}", shell=True, check=True)
