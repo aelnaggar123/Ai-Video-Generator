@@ -230,7 +230,6 @@ def fetch_ai_visual_image(prompt_text, width, height, seed_val=1):
     except:
         pass
     
-    # Styled fallback background if AI image server hiccups
     fb = Image.new("RGB", (width, height), color=(20, 28, 45))
     draw = ImageDraw.Draw(fb)
     draw.rectangle([40, 40, width - 40, height - 40], outline=(139, 0, 0), width=4)
@@ -303,7 +302,6 @@ if generate_btn:
             final_audio_dur = float(subprocess.check_output(probe_cmd, shell=True).decode('utf-8').strip())
             
             update_progress(30, f"🎨 Step 3/5: Generating AI background images for {final_audio_dur:.1f}s...")
-            sentences = [s.strip() for s in data['script'].split('.') if len(s.strip()] # fixed below safely
             sentences = [s.strip() for s in data['script'].split('.') if len(s.strip()) > 5]
             if not sentences:
                 sentences = [data['script']]
