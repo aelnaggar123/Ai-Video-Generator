@@ -139,7 +139,7 @@ with col_action2:
         st.session_state.generated_data = None
         st.rerun()
 
-# 100% Strict Pure Gemini Script Generator (Zero Fake Fallbacks, Real Dynamic Answers Only)
+# 100% Strict Pure Gemini Script Generator
 def generate_script_with_gemini(user_prompt, target_word_count, tone_style):
     if "GEMINI_API_KEY" not in st.secrets:
         raise ValueError("GEMINI_API_KEY is missing from Streamlit Secrets! Please add it.")
@@ -152,9 +152,9 @@ def generate_script_with_gemini(user_prompt, target_word_count, tone_style):
 The user wants a detailed, practical, step-by-step tutorial script about: "{user_prompt}".
 Tone & Style: {tone_style}.
 STRICT RULES:
-1. NEVER use generic filler sentences, robot intros, or cliché phrases (e.g., DO NOT say "Prepare your workspace with exact tools").
-2. GIVE THE ACTUAL SPECIFIC DETAILS: If it's about making Nescafe ("tare2et 3amel el nescafe"), explicitly state the amounts of instant coffee, sugar, hot water, milk frothing technique, and serving. If it's about anything else, provide real, concrete, domain-specific steps.
-3. Length must be substantial (around {target_word_count} words) to fill the requested duration naturally with real, useful, concrete steps.
+1. NEVER use generic filler sentences, robot intros, or cliché phrases.
+2. GIVE THE ACTUAL SPECIFIC DETAILS and concrete steps.
+3. Length must be substantial (around {target_word_count} words) to fill the requested duration naturally.
 4. Write entirely in clear English suitable for professional voiceover.
 """
 
@@ -166,39 +166,26 @@ STRICT RULES:
     headers = {"Content-Type": "application/json"}
     
     script_text = None
-    # Try up to 3 times to get a real valid response from Gemini
     for attempt in range(3):
         try:
             response = requests.post(gen_url, json=payload, headers=headers, timeout=60)
             if response.status_code == 200:
                 res_data = response.json()
                 candidate_text = res_data["candidates"][0]["content"]["parts"][0]["text"].strip()
-                if len(candidate_text.split()) > 40 and "workspace" not in candidate_text.lower():
+                if len(candidate_text.split()) > 40:
                     script_text = candidate_text
                     break
         except Exception:
             time.sleep(2)
             continue
             
-    # Dynamic intelligent topic-aware generator if network drops completely
     if not script_text or len(script_text.split()) < 40:
-        lower_p = user_prompt.lower()
-        if "nescafe" in lower_p or "نسكافيه" in lower_p:
-            script_text = (
-                f"Here is how to make a rich, frothy café-style Nescafe right at home. "
-                f"Step 1: Add one to two teaspoons of instant coffee granules and your desired amount of sugar into a clean mug. "
-                f"Step 2: Pour just a tiny splash of hot water—about one tablespoon—directly over the coffee and sugar mixture. "
-                f"Step 3: Vigorously whip the mixture using a spoon or a mini handheld frother for about thirty to forty seconds until it turns light brown, thick, and creamy. "
-                f"Step 4: Gently pour in hot milk or boiling water while stirring constantly to create a wonderful velvety foam layer on top. "
-                f"Step 5: Dust a tiny pinch of cocoa powder or instant coffee on top of the foam and serve immediately."
-            )
-        else:
-            script_text = (
-                f"Here is the definitive guide to mastering {user_prompt} with complete precision. "
-                f"Step 1: Understand the core components and specific requirements needed for this task. "
-                f"Step 2: Execute the process methodically, applying correct techniques at every individual stage. "
-                f"Step 3: Review your outcome carefully, make necessary refinements, and enjoy your successful results."
-            )
+        script_text = (
+            f"Here is the definitive guide to mastering {user_prompt} with complete precision. "
+            f"Step 1: Understand the core components and specific requirements needed for this task. "
+            f"Step 2: Execute the process methodically, applying correct techniques at every individual stage. "
+            f"Step 3: Review your outcome carefully, make necessary refinements, and enjoy your successful results."
+        )
 
     words_list = user_prompt.split()
     keywords = words_list[:4] if len(words_list) >= 4 else ["guide", "tutorial"]
@@ -216,38 +203,63 @@ STRICT RULES:
         "tags": tags
     }
 
-def create_step_visual_frame(width, height, step_title, step_desc):
-    img = Image.new("RGB", (width, height), color=(15, 23, 42))
+# Fetch AI-generated image from Pollinations.ai for each step dynamically
+def fetch_ai_visual_image(prompt_text, width, height):
+    try:
+        clean_prompt = re.sub(r'[^a-zA-Z0-9\s]', '', prompt_text)[:80]
+        encoded_prompt = requests.utils.quote(f"cinematic professional photography, {clean_prompt}, high resolution, 4k")
+        img_url = f"https://image.pollinations.ai/prompt/{encoded_prompt}?width={width}&height={height}&nologo=true"
+        
+        response = requests.get(img_url, timeout=12)
+        if response.status_code == 200 and len(response.content) > 2000:
+            image_stream = BytesIO(response.content)
+            img = Image.open(image_stream).convert("RGB")
+            return img
+    except:
+        pass
+    
+    # Fallback solid dark background if network fails
+    fallback_img = Image.new("RGB", (width, height), color=(15, 23, 42))
+    return fallback_img
+
+def create_step_visual_frame(width, height, step_title, step_desc, bg_image=None):
+    if bg_image:
+        img = bg_image.resize((width, height)).copy()
+        # Darken overlay for text readability
+        overlay = Image.new("RGBA", (width, height), (0, 0, 0, 140))
+        img = Image.alpha_composite(img.convert("RGBA"), overlay).convert("RGB")
+    else:
+        img = Image.new("RGB", (width, height), color=(15, 23, 42))
+
     draw = ImageDraw.Draw(img)
     
-    draw.rectangle([40, 40, width - 40, height - 40], outline=(139, 0, 0), width=5)
-    draw.rectangle([40, 40, width - 40, 110], fill=(30, 41, 59))
-    draw.text((70, 62), "A & W Studio - Professional Video Engine", fill=(200, 200, 200))
+    # Bottom semi-transparent card for step instructions
+    card_margin_x = 50
+    card_height = 240
+    card_margin_y = height - card_height - 60
     
-    card_margin_x = 70
-    card_margin_y = 150
     draw.rounded_rectangle(
-        [card_margin_x, card_margin_y, width - card_margin_x, height - 80],
+        [card_margin_x, card_margin_y, width - card_margin_x, height - 60],
         radius=16,
-        fill=(30, 41, 59),
-        outline=(51, 65, 85),
+        fill=(15, 23, 42),
+        outline=(139, 0, 0),
         width=3
     )
     
-    draw.text((card_margin_x + 40, card_margin_y + 40), "💡 " + step_title.upper(), fill=(255, 255, 255))
+    draw.text((card_margin_x + 30, card_margin_y + 25), "✨ " + step_title.upper(), fill=(255, 255, 255))
     
     words = step_desc.split()
     line = ""
-    y_text = card_margin_y + 110
+    y_text = card_margin_y + 75
     for word in words:
-        if len(line + " " + word) < 42:
+        if len(line + " " + word) < 48:
             line += " " + word
         else:
-            draw.text((card_margin_x + 40, y_text), line.strip(), fill=(226, 232, 240))
-            y_text += 45
+            draw.text((card_margin_x + 30, y_text), line.strip(), fill=(226, 232, 240))
+            y_text += 35
             line = word
     if line:
-        draw.text((card_margin_x + 40, y_text), line.strip(), fill=(226, 232, 240))
+        draw.text((card_margin_x + 30, y_text), line.strip(), fill=(226, 232, 240))
         
     return img
 
@@ -304,10 +316,10 @@ if generate_btn:
             
             target_words = int(duration * 135) if not is_short else int(duration * 60 * 2.2)
             
-            update_progress(5, f"🤖 Step 1/5: Requesting specific tutorial script for {duration} mins...")
+            update_progress(5, f"🤖 Step 1/6: Requesting specific tutorial script for {duration} mins...")
             data = generate_script_with_gemini(topic, target_words, style)
 
-            update_progress(20, f"🎙️ Step 2/5: Synthesizing voiceover matching target duration...")
+            update_progress(15, f"🎙️ Step 2/6: Synthesizing voiceover matching target duration...")
             audio_raw = "raw_human_voice.mp3"
             audio_final = "final_voice.mp3"
             
@@ -317,17 +329,25 @@ if generate_btn:
             probe_cmd = f"ffprobe -v error -show_entries format=duration -of default=noprint_wrappers=1:nokey=1 {audio_final}"
             final_audio_dur = float(subprocess.check_output(probe_cmd, shell=True).decode('utf-8').strip())
             
-            update_progress(35, f"🎨 Step 3/5: Rendering visual frames for {final_audio_dur:.1f}s duration...")
+            update_progress(30, f"🎨 Step 3/6: Generating AI Background Images via Pollinations.ai...")
+            sentences = [s.strip() for s in data['script'].split('.') if len(s.strip()) > 5]
+            if not sentences:
+                sentences = [data['script']]
+
+            # Pre-generate unique AI background images for each sentence/step
+            step_images = []
+            for idx, sent in enumerate(sentences):
+                update_progress(30 + int((idx / len(sentences)) * 15), f"🖼️ Generating AI Art for step {idx+1}/{len(sentences)}...")
+                ai_img = fetch_ai_visual_image(sent, width, height)
+                step_images.append(ai_img)
+
+            update_progress(50, f"🎥 Step 4/6: Rendering AI video frames for {final_audio_dur:.1f}s duration...")
             fps = 24
             total_frames = int(fps * final_audio_dur)
             video_no_audio = "temp_video.mp4"
             video_with_subtitles = "temp_subtitles.mp4"
             audio_combined = "combined_audio.mp3"
             final_mp4 = "final_generated_video.mp4"
-            
-            sentences = [s.strip() for s in data['script'].split('.') if len(s.strip()) > 5]
-            if not sentences:
-                sentences = [data['script']]
 
             fourcc = cv2.VideoWriter_fourcc(*'mp4v')
             out = cv2.VideoWriter(video_no_audio, fourcc, fps, (width, height))
@@ -337,19 +357,20 @@ if generate_btn:
             for frame_num in range(total_frames):
                 seg_idx = min(frame_num // frames_per_segment, len(sentences) - 1)
                 curr_text = sentences[seg_idx]
+                curr_bg = step_images[seg_idx] if seg_idx < len(step_images) else None
                 
-                img = create_step_visual_frame(width, height, f"Step {seg_idx + 1}", curr_text)
+                img = create_step_visual_frame(width, height, f"Step {seg_idx + 1}", curr_text, curr_bg)
                 frame_np = np.array(img)
                 cv_bgr_frame = cv2.cvtColor(frame_np, cv2.COLOR_RGB2BGR)
                 out.write(cv_bgr_frame)
                 
                 if frame_num % 120 == 0:
-                    render_progress = 40 + int((frame_num / total_frames) * 30)
-                    update_progress(render_progress, f"🎥 Rendering visual sequence ({frame_num}/{total_frames})...")
+                    render_progress = 50 + int((frame_num / total_frames) * 25)
+                    update_progress(render_progress, f"🎥 Rendering video sequence ({frame_num}/{total_frames})...")
 
             out.release()
 
-            update_progress(75, "🎵 Step 4/5: Mixing background music...")
+            update_progress(75, "🎵 Step 5/6: Mixing background music...")
             voice_to_use = audio_final
             if enable_bg_music:
                 bg_music_file = "bg_music.mp3"
@@ -360,7 +381,7 @@ if generate_btn:
                     except:
                         voice_to_use = audio_final
 
-            update_progress(85, "🎥 Step 5/5: Burning professional dynamic subtitles...")
+            update_progress(85, "🎥 Step 6/6: Burning professional dynamic subtitles...")
             video_to_merge = video_no_audio
             if enable_subtitles:
                 try:
