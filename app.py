@@ -102,13 +102,13 @@ with col_top1:
         topic = st.text_input(
             "🏷️ Video Title / Topic Name:", 
             value="",
-            placeholder="Name your project (e.g. Molokhia Masterclass)..."
+            placeholder="Name your project (e.g. Kunafa Masterclass)..."
         )
         custom_script_input = st.text_area(
-            "📝 Paste Your Exact Script Here:",
+            "📝 Paste Your Exact Script Here (You can use timing cues like [Opening - 0:00], they will be automatically filtered out for the voiceover):",
             value="",
-            height=120,
-            placeholder="Type or paste your exact English script here word for word..."
+            height=140,
+            placeholder="Type or paste your exact script here..."
         )
 
     style = st.selectbox(
@@ -163,7 +163,7 @@ with col_action2:
         st.session_state.generated_data = None
         st.rerun()
 
-# Script Generator function (Used only if AI mode is selected)
+# Script Generator function
 def generate_script_with_gemini(user_prompt, target_word_count, tone_style):
     if "GEMINI_API_KEY" not in st.secrets:
         raise ValueError("GEMINI_API_KEY is missing from Streamlit Secrets! Please add it.")
@@ -179,7 +179,7 @@ Tone & Style: {tone_style}.
 CORE DIRECTIVES:
 1. DECODE INTENT INTELLIGENTLY: Automatically interpret what the user wants, regardless of whether it's written in Franco or Arabic.
 2. ZERO GENERIC FILLER: Strictly ban generic introductions, robot phrases, or clichés. Give rich, concrete steps, exact proportions, timings, and professional techniques.
-3. NARRATION READY: Write entirely in clear, engaging English suitable for professional voiceover narration.
+3. NARRATION READY: Write entirely in clear, engaging English suitable for professional voiceover narration. DO NOT include bracketed timestamps like [Opening - 0:00] in the text itself.
 4. LENGTH: Must be substantial (at least {target_word_count} words).
 """
 
@@ -228,6 +228,14 @@ CORE DIRECTIVES:
         "search_keywords": keywords,
         "tags": tags
     }
+
+# Helper function to clean text for voiceover (removes bracketed timestamps/labels like [Opening – 0:00–0:15])
+def clean_script_for_voiceover(raw_text):
+    # Removes anything inside square brackets [] along with extra whitespaces
+    cleaned = re.sub(r'\[.*?\]', '', raw_text)
+    # Clean multiple newline characters left over
+    cleaned = re.sub(r'\n\s*\n', '\n', cleaned)
+    return cleaned.strip()
 
 # Smart Gender-Aware Animated Narrator Avatar
 def generate_narrator_avatar_frame(width, height, frame_count, voice_code):
@@ -370,13 +378,13 @@ if generate_btn:
                 target_words = int(duration * 135) if not is_short else int(duration * 60 * 2.2)
                 update_progress(5, f"🤖 Step 1/4: Generating script using AI...")
                 data = generate_script_with_gemini(topic, target_words, style)
-                script_to_use = data['script']
+                raw_script = data['script']
                 project_topic = topic
                 hooks = data['hooks']
                 tags = data['tags']
             else:
                 update_progress(5, f"📝 Step 1/4: Using your direct custom script...")
-                script_to_use = custom_script_input.strip()
+                raw_script = custom_script_input.strip()
                 project_topic = topic if topic.strip() else "Custom Video"
                 words_list = project_topic.split()
                 tags = f"{project_topic}, tutorial, guide, 2026"
@@ -386,11 +394,14 @@ if generate_btn:
                     f"Here is everything you need to know about {project_topic}."
                 ]
 
+            # Clean raw script for voiceover & subtitles (filters out brackets like [Opening - 0:00])
+            voice_script = clean_script_for_voiceover(raw_script)
+
             update_progress(15, f"🎙️ Step 2/4: Synthesizing full-duration voiceover ({selected_voice_code})...")
             audio_raw = "raw_human_voice.mp3"
             audio_final = "final_voice.mp3"
             
-            asyncio.run(generate_human_voice(script_to_use, selected_voice_code, audio_raw))
+            asyncio.run(generate_human_voice(voice_script, selected_voice_code, audio_raw))
             subprocess.run(f"ffmpeg -y -i {audio_raw} -filter:a 'atempo=1.02' {audio_final}", shell=True, check=True)
 
             probe_cmd = f"ffprobe -v error -show_entries format=duration -of default=noprint_wrappers=1:nokey=1 {audio_final}"
@@ -434,7 +445,7 @@ if generate_btn:
             video_to_merge = video_no_audio
             if enable_subtitles:
                 try:
-                    chunks = split_script_into_chunks(script_to_use, max_words=4)
+                    chunks = split_script_into_chunks(voice_script, max_words=4)
                     srt_content = ""
                     time_per_chunk = final_audio_dur / float(len(chunks))
                     for idx, chunk in enumerate(chunks):
@@ -471,7 +482,7 @@ if generate_btn:
 
             st.session_state.generated_data = {
                 "hooks": hooks,
-                "script": script_to_use,
+                "script": raw_script,
                 "tags": tags,
                 "video_bytes": video_bytes,
                 "is_short": is_short,
