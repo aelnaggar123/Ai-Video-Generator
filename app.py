@@ -139,7 +139,7 @@ with col_action2:
         st.session_state.generated_data = None
         st.rerun()
 
-# Real-Life Home Kitchen & Expert Script Generator (Strictly No Factory/Engineering slang)
+# Real-Life Home Kitchen & Expert Script Generator
 def generate_script_with_gemini(user_prompt, target_word_count, tone_style):
     if "GEMINI_API_KEY" not in st.secrets:
         raise ValueError("GEMINI_API_KEY is missing from Streamlit Secrets! Please add it.")
@@ -456,7 +456,7 @@ if st.session_state.generated_data:
     col_left, col_right = st.columns([1, 1])
     
     with col_left:
-        st.subheader(f>📺 Final Video Output ({res['duration']:.1f}s))
+        st.subheader(f"Final Video Output ({res['duration']:.1f}s)")
         video_file_io = BytesIO(res["video_bytes"])
         st.video(video_file_io)
         
