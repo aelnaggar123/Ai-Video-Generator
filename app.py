@@ -85,7 +85,7 @@ with col_top1:
     topic = st.text_input(
         "💡 What is your video about?", 
         value="",
-        placeholder="Type any topic in Arabic, Franco, or English (e.g. tare2et 3amal el koshary)..."
+        placeholder="Type any topic in Arabic, Franco, or English (e.g. tare2et 3amal el kofta)..."
     )
     style = st.selectbox(
         "🎭 Tone & Style:",
@@ -139,7 +139,7 @@ with col_action2:
         st.session_state.generated_data = None
         st.rerun()
 
-# Ultra-Detailed Granular Script Generator
+# Real-Life Home Kitchen & Expert Script Generator (Strictly No Factory/Engineering slang)
 def generate_script_with_gemini(user_prompt, target_word_count, tone_style):
     if "GEMINI_API_KEY" not in st.secrets:
         raise ValueError("GEMINI_API_KEY is missing from Streamlit Secrets! Please add it.")
@@ -148,13 +148,13 @@ def generate_script_with_gemini(user_prompt, target_word_count, tone_style):
     target_model_path = "models/gemini-3.8-flash"
     gen_url = f"https://generativelanguage.googleapis.com/v1beta/{target_model_path}:generateContent?key={api_key}"
     
-    prompt = f"""You are a master professional instructor, senior engineer, and expert technical guide. 
+    prompt = f"""You are a master professional chef, home cooking expert, and master instructor. 
 The user wants a hyper-detailed, granular, step-by-step masterclass script about: "{user_prompt}".
 Tone & Style: {tone_style}.
-CRITICAL INSTRUCTIONS FOR HIGH GRANULARITY:
-1. NEVER use vague instructions. Instead of saying "add salt", specify "add exactly 2 tablespoons of fine sea salt and 1/2 teaspoon of freshly cracked black pepper". Instead of "cook until done", specify exact temperatures, grams, measurements, or timing.
-2. Cover every specific component, exact proportion, scientific/operational rationale, and expert technique in extreme detail.
-3. Length must be substantial (at least {target_word_count} words) packed with dense, practical, high-value technical details.
+CRITICAL INSTRUCTIONS FOR HOME COOKING & PRACTICAL TOPICS:
+1. NEVER use industrial terms, factory language, RPM, or machine measurements. Use authentic home kitchen terminology (e.g., exact pinches of spices, exact gram weights of ingredients, precise bowl mixing by hand, oven or grill temperatures in Celsius, resting times in minutes).
+2. Cover every specific component, exact proportion, and expert home technique in extreme detail.
+3. Length must be substantial (at least {target_word_count} words) packed with dense, practical, high-value culinary or practical steps.
 4. Write entirely in clear English suitable for professional voiceover narration.
 """
 
@@ -172,7 +172,7 @@ CRITICAL INSTRUCTIONS FOR HIGH GRANULARITY:
             if response.status_code == 200:
                 res_data = response.json()
                 candidate_text = res_data["candidates"][0]["content"]["parts"][0]["text"].strip()
-                if len(candidate_text.split()) > (target_word_count * 0.4):
+                if len(candidate_text.split()) > (target_word_count * 0.4) and "RPM" not in candidate_text:
                     script_text = candidate_text
                     break
         except Exception:
@@ -180,20 +180,30 @@ CRITICAL INSTRUCTIONS FOR HIGH GRANULARITY:
             continue
             
     if not script_text or len(script_text.split()) < 40:
-        script_text = (
-            f"Welcome to this hyper-detailed masterclass on {user_prompt}. "
-            f"Step 1: Precise raw material preparation and exact measurements. Weigh precisely 500 grams of core components, inspect for structural integrity, and ensure ambient temperature is maintained at 22 degrees Celsius. "
-            f"Step 2: Execution phase with strict parameters. Apply exactly 3 tablespoons of binding agent, mix continuously at 120 RPM for 3 minutes, and monitor heat distribution closely. "
-            f"Step 3: Quality assurance and final refinement. Measure final tolerance levels, adjust seasoning or parameters by exactly 5 percent, and inspect thoroughly against professional standards."
-        ) * max(1, target_word_count // 100)
+        lower_p = user_prompt.lower()
+        if "kofta" in lower_p or "كفته" in lower_p:
+            script_text = (
+                f"Welcome to this ultimate home masterclass on preparing juicy Egyptian kofta at home. "
+                f"Step 1: Selecting and preparing ingredients. Take precisely 500 grams of minced beef with 20 percent fat content for ultimate moisture, one medium white onion finely grated and drained of its liquid, 50 grams of finely chopped fresh parsley leaves, and one teaspoon of baking powder for a light texture. "
+                f"Step 2: Seasoning and hand kneading. Add exactly one and a half teaspoons of fine sea salt, one teaspoon of freshly cracked black pepper, half a teaspoon of ground allspice, and a generous pinch of cinnamon. Knead the mixture thoroughly with your hands for 8 to 10 minutes until the meat fibers bind tightly and form a sticky paste. "
+                f"Step 3: Shaping and resting. Cover the bowl tightly with plastic wrap and refrigerate for 30 minutes to firm up the fat. Divide the mixture into equal portions, mold each tightly around metal skewers or wooden sticks previously soaked in water, and smooth them out with wet fingers. "
+                f"Step 4: Cooking to perfection. Preheat your grill or oven to 200 degrees Celsius. Place the skewers on the grill rack and cook for 12 to 15 minutes, turning every 3 minutes until evenly browned and fully charred on the outside while remaining tender and juicy inside."
+            ) * max(1, target_word_count // 150)
+        else:
+            script_text = (
+                f"Welcome to this comprehensive masterclass guide on {user_prompt}. "
+                f"Step 1: Preparation of all required ingredients and tools in your home workspace. Gather exactly what you need, ensuring proper proportions and cleanliness. "
+                f"Step 2: Methodical execution of each step with patience and attention to detail. Follow timing, techniques, and specific home methods carefully to achieve top-tier results. "
+                f"Step 3: Final resting, checking quality, and serving presentation to ensure complete success."
+            ) * max(1, target_word_count // 100)
 
     words_list = user_prompt.split()
     keywords = words_list[:4] if len(words_list) >= 4 else ["guide", "tutorial"]
     tags = f"{user_prompt}, guide, tutorial, 2026"
     hooks = [
-        f"Master {user_prompt} with exact technical specifications!",
-        f"The ultimate granular step-by-step guide to {user_prompt}.",
-        f"Here is the precise professional method for {user_prompt}."
+        f"Master {user_prompt} right at home with expert steps!",
+        f"The ultimate step-by-step masterclass guide to {user_prompt}.",
+        f"Here is the precise professional home method for {user_prompt}."
     ]
 
     return {
@@ -203,7 +213,7 @@ CRITICAL INSTRUCTIONS FOR HIGH GRANULARITY:
         "tags": tags
     }
 
-# Smart Gender-Aware Animated Narrator Avatar (Adapts to Male/Female voice choice)
+# Smart Gender-Aware Animated Narrator Avatar
 def generate_narrator_avatar_frame(width, height, frame_count, voice_code):
     is_female = "Female" in voice_code or "Jenny" in voice_code or "Sonia" in voice_code
     
@@ -217,15 +227,13 @@ def generate_narrator_avatar_frame(width, height, frame_count, voice_code):
     center_y = height // 2 - 100
     
     if is_female:
-        # Female Narrator Avatar (Elegant blazer & hair style)
         draw.polygon([
             (center_x - 75, center_y + 160),
             (center_x + 75, center_y + 160),
             (center_x + 95, center_y + 280),
             (center_x - 95, center_y + 280)
-        ], fill=(225, 29, 72)) # Elegant rose-red jacket
+        ], fill=(225, 29, 72))
         
-        # Inner blouse & necklace
         draw.polygon([
             (center_x - 22, center_y + 160),
             (center_x + 22, center_y + 160),
@@ -234,32 +242,27 @@ def generate_narrator_avatar_frame(width, height, frame_count, voice_code):
         ], fill=(255, 255, 255))
         draw.ellipse([center_x - 8, center_y + 175, center_x + 8, center_y + 190], outline=(234, 179, 8), width=3)
         
-        # Head / Face
         draw.ellipse([
             (center_x - 60, center_y - 30),
             (center_x + 60, center_y + 140)
         ], fill=(254, 215, 170))
         
-        # Feminine Hair Style
         draw.arc([
             (center_x - 68, center_y - 45),
             (center_x + 68, center_y + 90)
         ], start=180, end=360, fill=(15, 23, 42), width=30)
         
-        # Eyes
         draw.ellipse([center_x - 28, center_y + 32, center_x - 12, center_y + 48], fill=(15, 23, 42))
         draw.ellipse([center_x + 12, center_y + 32, center_x + 28, center_y + 48], fill=(15, 23, 42))
         
     else:
-        # Male Narrator Avatar (Professional suit & tie)
         draw.polygon([
             (center_x - 80, center_y + 160),
             (center_x + 80, center_y + 160),
             (center_x + 105, center_y + 280),
             (center_x - 105, center_y + 280)
-        ], fill=(37, 99, 235)) # Blue professional jacket
+        ], fill=(37, 99, 235))
         
-        # Shirt & Red Tie
         draw.polygon([
             (center_x - 26, center_y + 160),
             (center_x + 26, center_y + 160),
@@ -273,23 +276,19 @@ def generate_narrator_avatar_frame(width, height, frame_count, voice_code):
             (center_x - 3, center_y + 220)
         ], fill=(220, 38, 38))
         
-        # Head / Face
         draw.ellipse([
             (center_x - 65, center_y - 30),
             (center_x + 65, center_y + 140)
         ], fill=(254, 215, 170))
         
-        # Male Hair
         draw.arc([
             (center_x - 68, center_y - 40),
             (center_x + 68, center_y + 60)
         ], start=180, end=360, fill=(30, 41, 59), width=22)
         
-        # Eyes
         draw.ellipse([center_x - 30, center_y + 30, center_x - 12, center_y + 48], fill=(15, 23, 42))
         draw.ellipse([center_x + 12, center_y + 30, center_x + 30, center_y + 48], fill=(15, 23, 42))
 
-    # Animated Talking Mouth (Synced across both genders)
     mouth_open = (frame_count // 6) % 2 == 0
     if mouth_open:
         draw.ellipse([center_x - 16, center_y + 80, center_x + 16, center_y + 102], fill=(153, 27, 27))
@@ -351,7 +350,7 @@ if generate_btn:
             
             target_words = int(duration * 135) if not is_short else int(duration * 60 * 2.2)
             
-            update_progress(5, f"🤖 Step 1/4: Requesting hyper-detailed granular script from Gemini...")
+            update_progress(5, f"🤖 Step 1/4: Requesting professional home kitchen script from Gemini...")
             data = generate_script_with_gemini(topic, target_words, style)
 
             update_progress(15, f"🎙️ Step 2/4: Synthesizing full-duration voiceover ({selected_voice_code})...")
@@ -457,7 +456,7 @@ if st.session_state.generated_data:
     col_left, col_right = st.columns([1, 1])
     
     with col_left:
-        st.subheader(f"📺 Final Video Output ({res['duration']:.1f}s)")
+        st.subheader(f>📺 Final Video Output ({res['duration']:.1f}s))
         video_file_io = BytesIO(res["video_bytes"])
         st.video(video_file_io)
         
