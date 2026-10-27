@@ -105,7 +105,7 @@ with col_top1:
             placeholder="Name your project (e.g. Kunafa Masterclass)..."
         )
         custom_script_input = st.text_area(
-            "📝 Paste Your Exact Script Here (You can use timing cues like [Opening - 0:00], they will be automatically filtered out for the voiceover):",
+            "📝 Paste Your Exact Script Here (Timings [0:00] and markdown like ** will be automatically cleaned):",
             value="",
             height=140,
             placeholder="Type or paste your exact script here..."
@@ -179,7 +179,7 @@ Tone & Style: {tone_style}.
 CORE DIRECTIVES:
 1. DECODE INTENT INTELLIGENTLY: Automatically interpret what the user wants, regardless of whether it's written in Franco or Arabic.
 2. ZERO GENERIC FILLER: Strictly ban generic introductions, robot phrases, or clichés. Give rich, concrete steps, exact proportions, timings, and professional techniques.
-3. NARRATION READY: Write entirely in clear, engaging English suitable for professional voiceover narration. DO NOT include bracketed timestamps like [Opening - 0:00] in the text itself.
+3. NARRATION READY: Write entirely in clear, engaging English suitable for professional voiceover narration. DO NOT include bracketed timestamps like [Opening - 0:00] or markdown bold asterisks.
 4. LENGTH: Must be substantial (at least {target_word_count} words).
 """
 
@@ -229,10 +229,12 @@ CORE DIRECTIVES:
         "tags": tags
     }
 
-# Helper function to clean text for voiceover (removes bracketed timestamps/labels like [Opening – 0:00–0:15])
+# Advanced Helper function to clean text for voiceover (Removes brackets [...] and markdown asterisks **)
 def clean_script_for_voiceover(raw_text):
-    # Removes anything inside square brackets [] along with extra whitespaces
+    # Removes anything inside square brackets []
     cleaned = re.sub(r'\[.*?\]', '', raw_text)
+    # Removes markdown bold/italic asterisks ** or *
+    cleaned = cleaned.replace('**', '').replace('*', '')
     # Clean multiple newline characters left over
     cleaned = re.sub(r'\n\s*\n', '\n', cleaned)
     return cleaned.strip()
@@ -394,7 +396,7 @@ if generate_btn:
                     f"Here is everything you need to know about {project_topic}."
                 ]
 
-            # Clean raw script for voiceover & subtitles (filters out brackets like [Opening - 0:00])
+            # Clean raw script for voiceover & subtitles (filters out brackets and asterisks **)
             voice_script = clean_script_for_voiceover(raw_script)
 
             update_progress(15, f"🎙️ Step 2/4: Synthesizing full-duration voiceover ({selected_voice_code})...")
