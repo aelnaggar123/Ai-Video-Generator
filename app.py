@@ -78,15 +78,39 @@ st.markdown("---")
 if "generated_data" not in st.session_state:
     st.session_state.generated_data = None
 
+# Input Mode Switcher Radio
+input_mode = st.radio(
+    "⚙️ Choose Input Mode:",
+    ["AI Description / Topic (Let AI write script)", "Direct Custom Script (Paste your exact script)"],
+    horizontal=True
+)
+
+st.markdown("---")
+
 # Dashboard Controls
 col_top1, col_top2 = st.columns([2, 1])
 
 with col_top1:
-    topic = st.text_input(
-        "💡 What is your video about?", 
-        value="",
-        placeholder="Type any topic in Arabic, Franco, or English (e.g. 7omos el sham)..."
-    )
+    if input_mode == "AI Description / Topic (Let AI write script)":
+        topic = st.text_input(
+            "💡 What is your video about?", 
+            value="",
+            placeholder="Type any topic in Arabic, Franco, or English (e.g. 7omos el sham)..."
+        )
+        custom_script_input = ""
+    else:
+        topic = st.text_input(
+            "🏷️ Video Title / Topic Name:", 
+            value="",
+            placeholder="Name your project (e.g. Molokhia Masterclass)..."
+        )
+        custom_script_input = st.text_area(
+            "📝 Paste Your Exact Script Here:",
+            value="",
+            height=120,
+            placeholder="Type or paste your exact English script here word for word..."
+        )
+
     style = st.selectbox(
         "🎭 Tone & Style:",
         ["Informative & Engaging", "Professional & Corporate", "Educational & Clear", "Casual & Friendly"]
@@ -139,7 +163,7 @@ with col_action2:
         st.session_state.generated_data = None
         st.rerun()
 
-# 100% Zero-Hardcoding Dynamic Intent Parsing Generator
+# Script Generator function (Used only if AI mode is selected)
 def generate_script_with_gemini(user_prompt, target_word_count, tone_style):
     if "GEMINI_API_KEY" not in st.secrets:
         raise ValueError("GEMINI_API_KEY is missing from Streamlit Secrets! Please add it.")
@@ -148,17 +172,15 @@ def generate_script_with_gemini(user_prompt, target_word_count, tone_style):
     target_model_path = "models/gemini-3.8-flash"
     gen_url = f"https://generativelanguage.googleapis.com/v1beta/{target_model_path}:generateContent?key={api_key}"
     
-    # Advanced cognitive prompt that forces Gemini to parse intent across any language/slang natively
     prompt = f"""You are an advanced AI master instructor and expert technical/culinary guide with native multilingual and slang-translation capabilities.
-The user's topic/input is: "{user_prompt}" (This might be in Egyptian Arabic, Franco-Arabic, slang, or English).
+The user's topic/input is: "{user_prompt}".
 Tone & Style: {tone_style}.
 
 CORE DIRECTIVES:
-1. DECODE INTENT INTELLIGENTLY: Automatically interpret what the user wants, regardless of whether it's written in Franco (e.g. "7omos el sham", "tare2et el koshary") or Arabic. Translate it into its exact real-world practical subject.
-2. ZERO GENERIC FILLER: Strictly ban generic introductions, robot phrases, or clichés like "Preparation of all required ingredients and tools". 
-3. HIGH GRANULARITY & DEPTH: Provide rich, concrete, specific steps, exact proportions, measurements, gram weights, timings, and professional techniques.
-4. NARRATION READY: Write entirely in clear, engaging English suitable for professional voiceover narration.
-5. LENGTH: Must be substantial (at least {target_word_count} words) to naturally match the user's requested duration.
+1. DECODE INTENT INTELLIGENTLY: Automatically interpret what the user wants, regardless of whether it's written in Franco or Arabic.
+2. ZERO GENERIC FILLER: Strictly ban generic introductions, robot phrases, or clichés. Give rich, concrete steps, exact proportions, timings, and professional techniques.
+3. NARRATION READY: Write entirely in clear, engaging English suitable for professional voiceover narration.
+4. LENGTH: Must be substantial (at least {target_word_count} words).
 """
 
     payload = {
@@ -175,7 +197,6 @@ CORE DIRECTIVES:
             if response.status_code == 200:
                 res_data = response.json()
                 candidate_text = res_data["candidates"][0]["content"]["parts"][0]["text"].strip()
-                # Validate that the response is substantive and contains zero generic boilerplate
                 if len(candidate_text.split()) > 35 and "Preparation of all required ingredients" not in candidate_text:
                     script_text = candidate_text
                     break
@@ -183,14 +204,13 @@ CORE DIRECTIVES:
             time.sleep(2)
             continue
             
-    # Pure dynamic structural expansion fallback (No hardcoded dishes, purely algorithmic expansion based on user intent)
-    if not script_text or len(script_text.split()) < 35 or "Preparation of all required ingredients" in script_text:
+    if not script_text or len(script_text.split()) < 35:
         script_text = (
             f"Welcome to this comprehensive masterclass guide dedicated entirely to {user_prompt}. "
             f"In this detailed walkthrough, we will break down every essential phase required to achieve absolute mastery. "
-            f"Phase one: Initial setup and gathering precise components. Ensure all core elements are accounted for with accurate measurements, proper ratios, and optimal environmental conditions. "
-            f"Phase two: Step-by-step operational execution. Follow each precise technique, timing parameter, and expert method carefully, avoiding common mistakes to ensure top-tier execution. "
-            f"Phase three: Quality control, fine-tuning, and final presentation. Review your progress against professional standards to guarantee exceptional results every single time."
+            f"Phase one: Initial setup and gathering precise components with accurate measurements. "
+            f"Phase two: Step-by-step operational execution following precise techniques and timing parameters. "
+            f"Phase three: Quality control, fine-tuning, and final presentation to guarantee exceptional results."
         ) * max(1, target_word_count // 100)
 
     words_list = user_prompt.split()
@@ -326,8 +346,10 @@ async def generate_human_voice(text, voice_code, output_file):
     await communicate.save(output_file)
 
 if generate_btn:
-    if not topic.strip():
+    if input_mode == "AI Description / Topic (Let AI write script)" and not topic.strip():
         st.warning("⚠️ Please enter what you want the video to be about in the box above!")
+    elif input_mode == "Direct Custom Script (Paste your exact script)" and not custom_script_input.strip():
+        st.warning("⚠️ Please paste your custom script in the text area above!")
     else:
         status_container = st.empty()
         metric_container = st.empty()
@@ -343,16 +365,32 @@ if generate_btn:
             is_short = (video_format == "YouTube Short (30-59 sec)")
             width, height = (720, 1280) if is_short else (1280, 720)
             
-            target_words = int(duration * 135) if not is_short else int(duration * 60 * 2.2)
-            
-            update_progress(5, f"🤖 Step 1/4: Decoding user intent and generating dynamic script...")
-            data = generate_script_with_gemini(topic, target_words, style)
+            # Determine Script Source
+            if input_mode == "AI Description / Topic (Let AI write script)":
+                target_words = int(duration * 135) if not is_short else int(duration * 60 * 2.2)
+                update_progress(5, f"🤖 Step 1/4: Generating script using AI...")
+                data = generate_script_with_gemini(topic, target_words, style)
+                script_to_use = data['script']
+                project_topic = topic
+                hooks = data['hooks']
+                tags = data['tags']
+            else:
+                update_progress(5, f"📝 Step 1/4: Using your direct custom script...")
+                script_to_use = custom_script_input.strip()
+                project_topic = topic if topic.strip() else "Custom Video"
+                words_list = project_topic.split()
+                tags = f"{project_topic}, tutorial, guide, 2026"
+                hooks = [
+                    f"Master {project_topic} with this precise method!",
+                    f"The ultimate guide to {project_topic}.",
+                    f"Here is everything you need to know about {project_topic}."
+                ]
 
             update_progress(15, f"🎙️ Step 2/4: Synthesizing full-duration voiceover ({selected_voice_code})...")
             audio_raw = "raw_human_voice.mp3"
             audio_final = "final_voice.mp3"
             
-            asyncio.run(generate_human_voice(data['script'], selected_voice_code, audio_raw))
+            asyncio.run(generate_human_voice(script_to_use, selected_voice_code, audio_raw))
             subprocess.run(f"ffmpeg -y -i {audio_raw} -filter:a 'atempo=1.02' {audio_final}", shell=True, check=True)
 
             probe_cmd = f"ffprobe -v error -show_entries format=duration -of default=noprint_wrappers=1:nokey=1 {audio_final}"
@@ -396,7 +434,7 @@ if generate_btn:
             video_to_merge = video_no_audio
             if enable_subtitles:
                 try:
-                    chunks = split_script_into_chunks(data['script'], max_words=4)
+                    chunks = split_script_into_chunks(script_to_use, max_words=4)
                     srt_content = ""
                     time_per_chunk = final_audio_dur / float(len(chunks))
                     for idx, chunk in enumerate(chunks):
@@ -432,12 +470,12 @@ if generate_btn:
                 video_bytes = f.read()
 
             st.session_state.generated_data = {
-                "hooks": data['hooks'],
-                "script": data['script'],
-                "tags": data['tags'],
+                "hooks": hooks,
+                "script": script_to_use,
+                "tags": tags,
                 "video_bytes": video_bytes,
                 "is_short": is_short,
-                "topic": topic,
+                "topic": project_topic,
                 "duration": final_audio_dur
             }
 
