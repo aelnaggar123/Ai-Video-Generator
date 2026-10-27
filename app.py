@@ -203,57 +203,93 @@ CRITICAL INSTRUCTIONS FOR HIGH GRANULARITY:
         "tags": tags
     }
 
-# Properly Aligned Animated Narrator Avatar (Shifted Up Safely)
-def generate_narrator_avatar_frame(width, height, frame_count):
+# Smart Gender-Aware Animated Narrator Avatar (Adapts to Male/Female voice choice)
+def generate_narrator_avatar_frame(width, height, frame_count, voice_code):
+    is_female = "Female" in voice_code or "Jenny" in voice_code or "Sonia" in voice_code
+    
     img = Image.new("RGB", (width, height), color=(15, 23, 42))
     draw = ImageDraw.Draw(img)
     
-    # Studio spotlight effect shifted slightly higher
+    # Studio spotlight effect
     draw.ellipse([width//2 - 250, -150, width//2 + 250, 300], fill=(30, 41, 59))
     
-    # Avatar positioned higher up to leave ample clean space at the bottom for subtitles
     center_x = width // 2
     center_y = height // 2 - 100
     
-    # Body / Suit
-    draw.polygon([
-        (center_x - 80, center_y + 160),
-        (center_x + 80, center_y + 160),
-        (center_x + 105, center_y + 280),
-        (center_x - 105, center_y + 280)
-    ], fill=(37, 99, 235))
-    
-    # Shirt & Tie
-    draw.polygon([
-        (center_x - 26, center_y + 160),
-        (center_x + 26, center_y + 160),
-        (center_x + 12, center_y + 250),
-        (center_x - 12, center_y + 250)
-    ], fill=(255, 255, 255))
-    draw.polygon([
-        (center_x - 7, center_y + 160),
-        (center_x + 7, center_y + 160),
-        (center_x + 3, center_y + 220),
-        (center_x - 3, center_y + 220)
-    ], fill=(220, 38, 38))
-    
-    # Head / Face
-    draw.ellipse([
-        (center_x - 65, center_y - 30),
-        (center_x + 65, center_y + 140)
-    ], fill=(254, 215, 170))
-    
-    # Hair
-    draw.arc([
-        (center_x - 68, center_y - 40),
-        (center_x + 68, center_y + 60)
-    ], start=180, end=360, fill=(30, 41, 59), width=22)
-    
-    # Eyes
-    draw.ellipse([center_x - 30, center_y + 30, center_x - 12, center_y + 48], fill=(15, 23, 42))
-    draw.ellipse([center_x + 12, center_y + 30, center_x + 30, center_y + 48], fill=(15, 23, 42))
-    
-    # Animated Talking Mouth
+    if is_female:
+        # Female Narrator Avatar (Elegant blazer & hair style)
+        draw.polygon([
+            (center_x - 75, center_y + 160),
+            (center_x + 75, center_y + 160),
+            (center_x + 95, center_y + 280),
+            (center_x - 95, center_y + 280)
+        ], fill=(225, 29, 72)) # Elegant rose-red jacket
+        
+        # Inner blouse & necklace
+        draw.polygon([
+            (center_x - 22, center_y + 160),
+            (center_x + 22, center_y + 160),
+            (center_x + 10, center_y + 240),
+            (center_x - 10, center_y + 240)
+        ], fill=(255, 255, 255))
+        draw.ellipse([center_x - 8, center_y + 175, center_x + 8, center_y + 190], outline=(234, 179, 8), width=3)
+        
+        # Head / Face
+        draw.ellipse([
+            (center_x - 60, center_y - 30),
+            (center_x + 60, center_y + 140)
+        ], fill=(254, 215, 170))
+        
+        # Feminine Hair Style
+        draw.arc([
+            (center_x - 68, center_y - 45),
+            (center_x + 68, center_y + 90)
+        ], start=180, end=360, fill=(15, 23, 42), width=30)
+        
+        # Eyes
+        draw.ellipse([center_x - 28, center_y + 32, center_x - 12, center_y + 48], fill=(15, 23, 42))
+        draw.ellipse([center_x + 12, center_y + 32, center_x + 28, center_y + 48], fill=(15, 23, 42))
+        
+    else:
+        # Male Narrator Avatar (Professional suit & tie)
+        draw.polygon([
+            (center_x - 80, center_y + 160),
+            (center_x + 80, center_y + 160),
+            (center_x + 105, center_y + 280),
+            (center_x - 105, center_y + 280)
+        ], fill=(37, 99, 235)) # Blue professional jacket
+        
+        # Shirt & Red Tie
+        draw.polygon([
+            (center_x - 26, center_y + 160),
+            (center_x + 26, center_y + 160),
+            (center_x + 12, center_y + 250),
+            (center_x - 12, center_y + 250)
+        ], fill=(255, 255, 255))
+        draw.polygon([
+            (center_x - 7, center_y + 160),
+            (center_x + 7, center_y + 160),
+            (center_x + 3, center_y + 220),
+            (center_x - 3, center_y + 220)
+        ], fill=(220, 38, 38))
+        
+        # Head / Face
+        draw.ellipse([
+            (center_x - 65, center_y - 30),
+            (center_x + 65, center_y + 140)
+        ], fill=(254, 215, 170))
+        
+        # Male Hair
+        draw.arc([
+            (center_x - 68, center_y - 40),
+            (center_x + 68, center_y + 60)
+        ], start=180, end=360, fill=(30, 41, 59), width=22)
+        
+        # Eyes
+        draw.ellipse([center_x - 30, center_y + 30, center_x - 12, center_y + 48], fill=(15, 23, 42))
+        draw.ellipse([center_x + 12, center_y + 30, center_x + 30, center_y + 48], fill=(15, 23, 42))
+
+    # Animated Talking Mouth (Synced across both genders)
     mouth_open = (frame_count // 6) % 2 == 0
     if mouth_open:
         draw.ellipse([center_x - 16, center_y + 80, center_x + 16, center_y + 102], fill=(153, 27, 27))
@@ -340,7 +376,7 @@ if generate_btn:
             out = cv2.VideoWriter(video_no_audio, fourcc, fps, (width, height))
 
             for frame_num in range(total_frames):
-                avatar_img = generate_narrator_avatar_frame(width, height, frame_num)
+                avatar_img = generate_narrator_avatar_frame(width, height, frame_num, selected_voice_code)
                 frame_np = np.array(avatar_img)
                 cv_bgr_frame = cv2.cvtColor(frame_np, cv2.COLOR_RGB2BGR)
                 out.write(cv_bgr_frame)
@@ -383,7 +419,6 @@ if generate_btn:
                     with open("subtitles.srt", "w", encoding="utf-8") as f:
                         f.write(srt_content)
                         
-                    # Optimized font size & margin to prevent any overlap with the avatar
                     font_size = 24 if is_short else 30
                     subtitle_filter = f"subtitles=subtitles.srt:force_style='FontSize={font_size},PrimaryColour=&H0000FFFF,OutlineColour=&H00000000,BackColour=&H80000000,BorderStyle=4,Alignment=2,MarginV=60'"
                     subprocess.run(f"ffmpeg -y -i {video_no_audio} -vf \"{subtitle_filter}\" -c:v libx264 -preset ultrafast {video_with_subtitles}", shell=True, check=True)
