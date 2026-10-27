@@ -139,7 +139,7 @@ with col_action2:
         st.session_state.generated_data = None
         st.rerun()
 
-# 100% Robust Smart Script Generator (Handles Arabic, Franco, English with zero generic fallbacks)
+# 100% Robust Smart Script Generator
 def generate_script_with_gemini(user_prompt, target_word_count, tone_style):
     if "GEMINI_API_KEY" not in st.secrets:
         raise ValueError("GEMINI_API_KEY is missing from Streamlit Secrets! Please add it.")
@@ -148,11 +148,11 @@ def generate_script_with_gemini(user_prompt, target_word_count, tone_style):
     target_model_path = "models/gemini-3.8-flash"
     gen_url = f"https://generativelanguage.googleapis.com/v1beta/{target_model_path}:generateContent?key={api_key}"
     
-    prompt = f"""You are a master professional instructor and expert guide. 
+    prompt = f"""You are a master professional instructor and expert narrator. 
 The user wants a detailed, practical, step-by-step tutorial script about: "{user_prompt}".
 Tone & Style: {tone_style}.
 CRITICAL INSTRUCTIONS:
-1. Translate and interpret the user's intent perfectly, even if written in Franco-Arabic, slang, or Arabic (e.g. if it means frying chicken, making koshary, or any recipe/topic, write about it in full detail).
+1. Translate and interpret the user's intent perfectly, even if written in Franco-Arabic, slang, or Arabic.
 2. ABSOLUTELY NO generic filler, no robot intros, and no cliché phrases like "Gather required components". Give real, concrete, specific steps, ingredients, and expert techniques.
 3. Length must be substantial (at least {target_word_count} words) to match the requested duration naturally.
 4. Write entirely in clear English suitable for professional voiceover narration.
@@ -202,7 +202,7 @@ CRITICAL INSTRUCTIONS:
             )
         else:
             script_text = (
-                f"Welcome to this comprehensive masterclass guide on {user_prompt}. "
+                f"Welcome to this comprehensive guide on {user_prompt}. "
                 f"In this detailed breakdown, we will explore every essential phase required to achieve absolute perfection. "
                 f"Phase one: Initial preparation and gathering all necessary ingredients, components, or tools. Ensure your workspace is fully optimized and ready. "
                 f"Phase two: Executing the core operational steps with high precision. Pay close attention to timing, proportions, and technique to avoid common mistakes. "
@@ -226,22 +226,64 @@ CRITICAL INSTRUCTIONS:
         "tags": tags
     }
 
-# 100% Reliable Dynamic Cinematic Visual Engine
-def generate_dynamic_studio_frame(width, height, step_num, total_steps, topic_text):
-    r = int((step_num * 40) % 200 + 30)
-    g = int((step_num * 20) % 100 + 20)
-    b = int((step_num * 60) % 220 + 35)
-    
-    img = Image.new("RGB", (width, height), color=(r, g, b))
+# Animated Cartoon Narrator Avatar Generator (Clean, professional, animated talking character)
+def generate_narrator_avatar_frame(width, height, frame_count):
+    # Studio background gradient
+    img = Image.new("RGB", (width, height), color=(15, 23, 42))
     draw = ImageDraw.Draw(img)
     
-    draw.rectangle([35, 35, width - 35, height - 35], outline=(220, 38, 38), width=5)
-    draw.rectangle([70, 70, width - 70, 160], fill=(15, 23, 42))
+    # Subtle studio spotlight effect
+    draw.ellipse([width//2 - 250, -100, width//2 + 250, 400], fill=(30, 41, 59))
     
-    clean_title = topic_text.upper()[:28]
-    draw.text((100, 95), f"MASTERCLASS: {clean_title}", fill=(255, 255, 255))
-    draw.text((100, 125), f"STAGE {step_num} OF {total_steps} — PROFESSIONAL EXECUTION", fill=(148, 163, 184))
+    # Draw Cartoon Narrator Avatar in the center
+    center_x = width // 2
+    center_y = height // 2 - 40
     
+    # Body / Suit
+    draw.polygon([
+        (center_x - 90, center_y + 180),
+        (center_x + 90, center_y + 180),
+        (center_x + 120, center_y + 320),
+        (center_x - 120, center_y + 320)
+    ], fill=(37, 99, 235)) # Blue professional jacket
+    
+    # Shirt & Tie
+    draw.polygon([
+        (center_x - 30, center_y + 180),
+        (center_x + 30, center_y + 180),
+        (center_x + 15, center_y + 280),
+        (center_x - 15, center_y + 280)
+    ], fill=(255, 255, 255))
+    draw.polygon([
+        (center_x - 8, center_y + 180),
+        (center_x + 8, center_y + 180),
+        (center_x + 4, center_y + 250),
+        (center_x - 4, center_y + 250)
+    ], fill=(220, 38, 38)) # Red tie
+    
+    # Head / Face
+    draw.ellipse([
+        (center_x - 75, center_y - 20),
+        (center_x + 75, center_y + 160)
+    ], fill=(254, 215, 170)) # Skin tone
+    
+    # Hair
+    draw.arc([
+        (center_x - 78, center_y - 30),
+        (center_x + 78, center_y + 80)
+    ], start=180, end=360, fill=(30, 41, 59), width=25)
+    
+    # Eyes
+    draw.ellipse([center_x - 35, center_y + 40, center_x - 15, center_y + 60], fill=(15, 23, 42))
+    draw.ellipse([center_x + 15, center_y + 40, center_x + 35, center_y + 60], fill=(15, 23, 42))
+    
+    # Animated Talking Mouth (opens and closes based on frame count)
+    mouth_open = (frame_count // 6) % 2 == 0
+    if mouth_open:
+        draw.ellipse([center_x - 20, center_y + 95, center_x + 20, center_y + 120], fill=(153, 27, 27))
+    else:
+        draw.rectangle([center_x - 18, center_y + 105, center_x + 18, center_y + 112], fill=(153, 27, 27))
+        
     return img
 
 def fetch_royalty_free_music(output_path):
@@ -310,17 +352,7 @@ if generate_btn:
             probe_cmd = f"ffprobe -v error -show_entries format=duration -of default=noprint_wrappers=1:nokey=1 {audio_final}"
             final_audio_dur = float(subprocess.check_output(probe_cmd, shell=True).decode('utf-8').strip())
             
-            update_progress(30, f"🎨 Step 3/5: Rendering cinematic studio visual frames for {final_audio_dur:.1f}s...")
-            sentences = [s.strip() for s in data['script'].split('.') if len(s.strip()) > 5]
-            if not sentences:
-                sentences = [data['script']]
-
-            step_frames = []
-            for idx, sent in enumerate(sentences):
-                studio_img = generate_dynamic_studio_frame(width, height, idx + 1, len(sentences), topic)
-                step_frames.append(studio_img)
-
-            update_progress(55, f"🎥 Step 4/5: Rendering dynamic video sequence matching exact audio duration...")
+            update_progress(30, f"🎨 Step 3/5: Rendering animated narrator avatar video for {final_audio_dur:.1f}s...")
             fps = 24
             total_frames = int(fps * final_audio_dur)
             video_no_audio = "temp_video.mp4"
@@ -331,19 +363,15 @@ if generate_btn:
             fourcc = cv2.VideoWriter_fourcc(*'mp4v')
             out = cv2.VideoWriter(video_no_audio, fourcc, fps, (width, height))
 
-            frames_per_segment = max(1, total_frames // len(step_frames))
-
             for frame_num in range(total_frames):
-                img_idx = min(frame_num // frames_per_segment, len(step_frames) - 1)
-                curr_frame = step_frames[img_idx] if img_idx < len(step_frames) else step_frames[0]
-                
-                frame_np = np.array(curr_frame)
+                avatar_img = generate_narrator_avatar_frame(width, height, frame_num)
+                frame_np = np.array(avatar_img)
                 cv_bgr_frame = cv2.cvtColor(frame_np, cv2.COLOR_RGB2BGR)
                 out.write(cv_bgr_frame)
                 
                 if frame_num % 120 == 0:
-                    render_progress = 55 + int((frame_num / total_frames) * 20)
-                    update_progress(render_progress, f"🎥 Rendering frame sequence ({frame_num}/{total_frames})...")
+                    render_progress = 30 + int((frame_num / total_frames) * 40)
+                    update_progress(render_progress, f"🎥 Rendering narrator animation ({frame_num}/{total_frames})...")
 
             out.release()
 
