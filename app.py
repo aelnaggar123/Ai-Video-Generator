@@ -1,26 +1,24 @@
 import streamlit as st
 import requests
-import json
 import os
 import cv2
 import subprocess
-import time
 import asyncio
 import edge_tts
 import numpy as np
 import re
-from PIL import Image, ImageDraw, ImageFont
+from PIL import Image, ImageDraw
 from io import BytesIO
 
 # Page Configuration
 st.set_page_config(
-    page_title="A & W Cinematic AI Studio",
+    page_title="A & W Cinematic Script Studio",
     page_icon="🎬",
     layout="wide",
     initial_sidebar_state="expanded"
 )
 
-# Custom Blood Red & Dark Minimalist Styling
+# Custom Dark & Blood Red Theme Styling
 st.markdown("""
     <style>
     .main {
@@ -53,60 +51,63 @@ st.markdown("""
     </style>
 """, unsafe_allow_html=True)
 
-# Smart Script Parser: Extracts Guidance/Cues and Spoken Lines
+# Smart Cinematic Script Parser (Extracts Scene Guidance & Spoken Text)
 def parse_cinematic_script(raw_text):
     scenes = []
-    # Split by common scene markers or double newlines
-    raw_scenes = re.split(r'(?:Scene \d+|#|\n\s*\n)', raw_text)
+    # Split blocks by double newlines or Scene tags
+    raw_blocks = re.split(r'\n\s*\n', raw_text)
     
-    for s in raw_scenes:
-        if not s.strip():
+    for block in raw_blocks:
+        if not block.strip():
             continue
-        # Extract instructions/guidance inside brackets if any
-        guidance_match = re.findall(r'\[(.*?)\]', s)
+        
+        # Extract guidance inside brackets if any
+        guidance_match = re.findall(r'\[(.*?)\]', block)
         guidance = " ".join(guidance_match) if guidance_match else "Cinematic Scene"
         
         # Clean spoken text (remove bracketed notes)
-        spoken = re.sub(r'\[.*?\]', '', s).replace('**', '').replace('*', '').strip()
-        if spoken:
+        spoken = re.sub(r'\[.*?\]', '', block).replace('**', '').replace('*', '').strip()
+        
+        if spoken or guidance:
             scenes.append({
                 "guidance": guidance,
-                "spoken": spoken
+                "spoken": spoken if spoken else guidance
             })
             
     if not scenes:
-        scenes = [{"guidance": "General Scene", "spoken": clean_script_for_voiceover(raw_text)}]
+        scenes = [{"guidance": "Opening Scene", "spoken": raw_text}]
     return scenes
 
-def clean_script_for_voiceover(raw_text):
-    cleaned = re.sub(r'\[.*?\]', '', raw_text)
-    cleaned = cleaned.replace('**', '').replace('*', '')
-    cleaned = re.sub(r'\n\s*\n', '\n', cleaned)
-    return cleaned.strip()
+def clean_script_for_voiceover(scenes):
+    full_text = " ".join([sc["spoken"] for sc in scenes if sc["spoken"]])
+    return full_text
 
-# Generate a Warm/Cinematic Scene Image based on Guidance
-def generate_cinematic_scene_image(width, height, guidance_text, theme="Warm"):
-    # Warm Theme Color Palette (Oranges, Ambers, Deep Browns, Soft Golds)
-    if "warm" in theme.lower() or "sunset" in guidance_text.lower() or "cozy" in guidance_text.lower():
-        bg_color = (40, 20, 10)
-        accent_color = (234, 88, 12) # Warm Amber/Orange
-        secondary_color = (251, 191, 36) # Soft Gold
+# Generate Cinematic Scene Image based on Theme & Guidance
+def generate_cinematic_frame(width, height, guidance_text, theme="Warm & Cozy"):
+    if "warm" in theme.lower():
+        bg_color = (35, 20, 10)
+        primary_accent = (234, 88, 12) # Warm Amber
+        text_color = (253, 230, 138)
+    elif "blood" in theme.lower() or "dark" in theme.lower():
+        bg_color = (15, 23, 42)
+        primary_accent = (225, 29, 72) # Blood Red
+        text_color = (248, 250, 252)
     else:
         bg_color = (15, 23, 42)
-        accent_color = (225, 29, 72)
-        secondary_color = (56, 189, 248)
+        primary_accent = (37, 99, 235) # Cinematic Blue
+        text_color = (224, 242, 254)
 
     img = Image.new("RGB", (width, height), color=bg_color)
     draw = ImageDraw.Draw(img)
     
-    # Draw artistic abstract cinematic elements
-    draw.ellipse([-100, -100, width + 100, height // 2], fill=accent_color)
-    draw.rectangle([50, height - 150, width - 50, height - 50], fill=(30, 20, 15))
+    # Draw abstract cinematic shapes
+    draw.ellipse([-150, -150, width + 150, height // 2], fill=primary_accent)
+    draw.rectangle([40, height - 160, width - 40, height - 60], fill=(20, 24, 33))
     
-    # Draw Guidance Text Overlay as a visual cue on the scene
-    wrapped_text = f"SCENE: {guidance_text[:60]}..."
-    draw.rectangle([40, height // 2 - 40, width - 40, height // 2 + 40], fill=(0, 0, 0, 160))
-    draw.text((60, height // 2 - 20), wrapped_text, fill=secondary_color)
+    # Draw Scene Guidance Text on Visual
+    display_text = f"SCENE: {guidance_text[:70]}"
+    draw.rectangle([50, height // 2 - 45, width - 50, height // 2 + 45], fill=(0, 0, 0, 180))
+    draw.text((70, height // 2 - 20), display_text, fill=text_color)
     
     return img
 
@@ -123,8 +124,8 @@ def fetch_royalty_free_music(output_path):
             continue
     return False
 
-def split_script_into_chunks(script_text, max_words=4):
-    words = script_text.split()
+def split_text_into_chunks(text, max_words=4):
+    words = text.split()
     chunks = []
     current_chunk = []
     for word in words:
@@ -136,13 +137,13 @@ def split_script_into_chunks(script_text, max_words=4):
         chunks.append(" ".join(current_chunk))
     return chunks
 
-async def generate_human_voice(text, voice_code, output_file):
+async def generate_voiceover(text, voice_code, output_file):
     communicate = edge_tts.Communicate(text, voice_code)
     await communicate.save(output_file)
 
 # Main App Layout
-st.title("🎬 A & W Cinematic AI Studio")
-st.markdown("Professional Storytelling & Character Video Production: Ahmed El Naggar & Sem Sem ❤️")
+st.title("🎬 A & W Cinematic Script Studio")
+st.markdown("Professional Cinematic Script-to-Video Engine: Ahmed El Naggar & Sem Sem ❤️")
 
 with st.sidebar:
     st.header("⚙️ Studio Settings")
@@ -156,33 +157,32 @@ with st.sidebar:
     )
     visual_theme = st.selectbox(
         "🎨 Visual Theme",
-        ["Warm & Cozy (Sunset/Gold)", "Dark & Blood Red (Minimalist)", "Cinematic Blue"]
+        ["Warm & Cozy (Gold/Amber)", "Dark & Blood Red (Minimalist)", "Cinematic Blue"]
     )
     enable_subs = st.checkbox("💬 Burn-in Subtitles", value=True)
     enable_music = st.checkbox("🎵 Background Music", value=True)
-    use_uploaded_assets = st.checkbox("Use Uploaded Assets as Scenes", value=True)
 
 col1, col2 = st.columns([2, 1])
 
 with col1:
     script_input = st.text_area(
-        "📝 Full Cinematic Script (with [Guidance] & Scenes)",
-        height=220,
-        placeholder="Example:\n[Scene 1: Warm morning coffee on a balcony]\nHello everyone, welcome to our story.\n\n[Scene 2: Walking down a historic street]\nToday we explore amazing places..."
+        "📝 Enter Cinematic Script (with [Scene Guidance])",
+        height=260,
+        placeholder="Example:\n[Scene 1: Warm morning sunlight hitting a quiet desk]\nWelcome to our journey of creation and success.\n\n[Scene 2: Transition to a modern architectural blueprint]\nEvery great project starts with a clear and structured plan."
     )
 
 with col2:
     uploaded_files = st.file_uploader(
-        "🖼️ Upload Custom Scene Images",
+        "🖼️ Upload Custom Scene Images (Optional)",
         type=["png", "jpg", "jpeg"],
         accept_multiple_files=True
     )
 
-if st.button("🚀 Render Cinematic Video", use_container_width=True):
+if st.button("🚀 Render Cinematic Video from Script", use_container_width=True):
     if not script_input.strip():
-        st.error("⚠️ Please enter a script first!")
+        st.error("⚠️ Please enter a cinematic script first!")
     else:
-        status_box = st.status("🎬 Parsing Script & Initializing Studio Pipeline...", expanded=True)
+        status_box = st.status("🎬 Parsing Script & Initializing Pipeline...", expanded=True)
         
         try:
             voice_map = {
@@ -196,23 +196,23 @@ if st.button("🚀 Render Cinematic Video", use_container_width=True):
             is_vertical = ("Vertical" in format_choice)
             width, height = (720, 1280) if is_vertical else (1280, 720)
             
-            # Parse scenes and spoken text
+            # Parse Script into Scenes
             parsed_scenes = parse_cinematic_script(script_input)
-            full_voice_script = " ".join([sc["spoken"] for sc in parsed_scenes])
+            voice_script = clean_script_for_voiceover(parsed_scenes)
 
-            status_box.update(label="🎙️ Synthesizing Pro Voiceover for all Scenes...")
-            audio_raw = "raw_human_voice.mp3"
+            status_box.update(label="🎙️ Synthesizing Voiceover...")
+            audio_raw = "raw_voice.mp3"
             audio_final = "final_voice.mp3"
-            asyncio.run(generate_human_voice(full_voice_script, voice_code, audio_raw))
+            asyncio.run(generate_voiceover(voice_script, voice_code, audio_raw))
             subprocess.run(f"ffmpeg -y -i {audio_raw} -filter:a 'atempo=1.02' {audio_final}", shell=True, check=True)
 
             probe_cmd = f"ffprobe -v error -show_entries format=duration -of default=noprint_wrappers=1:nokey=1 {audio_final}"
-            final_audio_dur = float(subprocess.check_output(probe_cmd, shell=True).decode('utf-8').strip())
+            total_duration = float(subprocess.check_output(probe_cmd, shell=True).decode('utf-8').strip())
             
             fps = 24
-            total_frames = int(fps * final_audio_dur)
+            total_frames = int(fps * total_duration)
             video_no_audio = "temp_video.mp4"
-            video_with_subtitles = "temp_subtitles.mp4"
+            video_with_subs = "temp_subtitles.mp4"
             audio_combined = "combined_audio.mp3"
             final_mp4 = "final_generated_video.mp4"
 
@@ -220,41 +220,41 @@ if st.button("🚀 Render Cinematic Video", use_container_width=True):
             fourcc = cv2.VideoWriter_fourcc(*'mp4v')
             out = cv2.VideoWriter(video_no_audio, fourcc, fps, (width, height))
 
-            # Load uploaded images if any
+            # Load uploaded asset images if provided
             user_images = []
-            if uploaded_files and use_uploaded_assets:
+            if uploaded_files:
                 for uf in uploaded_files:
                     img_bytes = uf.read()
                     img_pil = Image.open(BytesIO(img_bytes)).convert("RGB").resize((width, height))
                     user_images.append(img_pil)
 
-            # Distribute frames across parsed scenes
+            # Distribute frames proportionally across parsed scenes
             frames_per_scene = max(1, total_frames // len(parsed_scenes))
 
-            for scene_idx, scene in enumerate(parsed_scenes):
-                scene_frames = frames_per_scene if scene_idx < len(parsed_scenes) - 1 else (total_frames - (frames_per_scene * scene_idx))
+            for idx, scene in enumerate(parsed_scenes):
+                scene_frame_count = frames_per_scene if idx < len(parsed_scenes) - 1 else (total_frames - (frames_per_scene * idx))
                 
-                # Determine scene image source
-                if user_images and scene_idx < len(user_images):
-                    base_scene_img = user_images[scene_idx]
+                # Pick image source: User uploaded or generated cinematic frame
+                if user_images and idx < len(user_images):
+                    base_img = user_images[idx]
                 else:
-                    base_scene_img = generate_cinematic_scene_image(width, height, scene["guidance"], visual_theme)
+                    base_img = generate_cinematic_frame(width, height, scene["guidance"], visual_theme)
 
-                for f_in_scene in range(scene_frames):
-                    frame_np = np.array(base_scene_img)
-                    cv_bgr_frame = cv2.cvtColor(frame_np, cv2.COLOR_RGB2BGR)
-                    out.write(cv_bgr_frame)
+                for _ in range(scene_frame_count):
+                    frame_np = np.array(base_img)
+                    cv_bgr = cv2.cvtColor(frame_np, cv2.COLOR_RGB2BGR)
+                    out.write(cv_bgr)
 
             out.release()
 
-            voice_to_use = audio_final
+            audio_to_merge = audio_final
             if enable_music:
-                status_box.update(label="🎵 Mixing Warm Background Music...")
+                status_box.update(label="🎵 Mixing Background Music...")
                 bg_file = "bg_music.mp3"
                 if fetch_royalty_free_music(bg_file):
                     try:
                         subprocess.run(f"ffmpeg -y -i {audio_final} -stream_loop -1 -i {bg_file} -filter_complex \"[1:a]volume=0.15[bg];[0:a][bg]amix=inputs=2:duration=first[a]\" -map \"[a]\" {audio_combined}", shell=True, check=True)
-                        voice_to_use = audio_combined
+                        audio_to_merge = audio_combined
                     except:
                         pass
 
@@ -262,9 +262,9 @@ if st.button("🚀 Render Cinematic Video", use_container_width=True):
             if enable_subs:
                 status_box.update(label="💬 Burning Dynamic Subtitles...")
                 try:
-                    chunks = split_script_into_chunks(full_voice_script, max_words=4)
+                    chunks = split_text_into_chunks(voice_script, max_words=4)
                     srt_content = ""
-                    time_per_chunk = final_audio_dur / float(len(chunks))
+                    time_per_chunk = total_duration / float(len(chunks))
                     for idx, chunk in enumerate(chunks):
                         start_s = idx * time_per_chunk
                         end_s = (idx + 1) * time_per_chunk
@@ -276,16 +276,16 @@ if st.button("🚀 Render Cinematic Video", use_container_width=True):
                         f.write(srt_content)
                     
                     sub_filter = f"subtitles=subtitles.srt:force_style='FontSize=30,PrimaryColour=&H0000FFFF,OutlineColour=&H00000000,BackColour=&H80000000,BorderStyle=4,Alignment=2,MarginV=60'"
-                    subprocess.run(f"ffmpeg -y -i {video_no_audio} -vf \"{sub_filter}\" -c:v libx264 -preset ultrafast {video_with_subtitles}", shell=True, check=True)
-                    video_to_merge = video_with_subtitles
+                    subprocess.run(f"ffmpeg -y -i {video_no_audio} -vf \"{sub_filter}\" -c:v libx264 -preset ultrafast {video_with_subs}", shell=True, check=True)
+                    video_to_merge = video_with_subs
                 except:
                     pass
 
-            status_box.update(label="🚀 Finalizing Cinematic Masterpiece...")
-            subprocess.run(f"ffmpeg -y -i {video_to_merge} -i {voice_to_use} -c:v libx264 -preset ultrafast -pix_fmt yuv420p -c:a aac -shortest {final_mp4}", shell=True, check=True)
+            status_box.update(label="🚀 Finalizing Cinematic Output...")
+            subprocess.run(f"ffmpeg -y -i {video_to_merge} -i {audio_to_merge} -c:v libx264 -preset ultrafast -pix_fmt yuv420p -c:a aac -shortest {final_mp4}", shell=True, check=True)
 
             status_box.update(label="✅ Render Complete!", state="complete")
-            st.success("🎉 Your multi-scene cinematic video with Warm Theme & Guidance is ready!")
+            st.success("🎉 Your cinematic script-to-video masterpiece is ready!")
             st.video(final_mp4)
 
         except Exception as e:
