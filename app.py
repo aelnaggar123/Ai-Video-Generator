@@ -120,7 +120,7 @@ async def generate_human_voice(text, voice_code, output_file):
 
 # Main App Layout
 st.title("🎬 A & W Cinematic AI Studio")
-st.markdown("Professional Storytelling & Character Video Production: Masterminded by Eng. Ahmed El Naggar ❤️")
+st.markdown("Professional Storytelling & Character Video Production: Ahmed El Naggar & Sem Sem ❤️")
 
 with st.sidebar:
     st.header("⚙️ Studio Settings")
