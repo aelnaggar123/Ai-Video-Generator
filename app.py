@@ -9,157 +9,63 @@ import asyncio
 import edge_tts
 import numpy as np
 import re
-from PIL import Image, ImageDraw, ImageFont
+from PIL import Image, ImageDraw
 from io import BytesIO
 
 # Page Configuration
 st.set_page_config(
-    page_title="A & W Cinematic AI Studio", 
-    page_icon="🎬", 
+    page_title="A & W Cinematic AI Studio",
+    page_icon="🎬",
     layout="wide",
-    initial_sidebar_state="collapsed"
+    initial_sidebar_state="expanded"
 )
 
-# Dark Elegant Cinematic Theme CSS
+# Custom Blood Red & Dark Minimalist Styling
 st.markdown("""
     <style>
-    .stApp {
-        background: linear-gradient(135deg, #090d16 0%, #111827 50%, #1c0c14 100%);
-        color: #f3f4f6;
-        font-family: 'Inter', system-ui, -apple-system, sans-serif;
+    .main {
+        background-color: #0f172a;
+        color: #f8fafc;
     }
-    h1 {
-        color: #ffffff !important;
-        font-weight: 800 !important;
-        letter-spacing: -0.5px;
+    .stButton>button {
+        background-color: #e11d48;
+        color: white;
+        border-radius: 8px;
+        font-weight: bold;
+        border: none;
+        padding: 0.6rem 1.2rem;
+        transition: all 0.3s ease;
     }
-    .stCaption {
-        color: #9ca3af !important;
-        font-size: 1rem !important;
+    .stButton>button:hover {
+        background-color: #be123c;
+        box-shadow: 0 4px 12px rgba(225, 29, 72, 0.4);
     }
-    .stTextInput input, .stSelectbox > div > div, .stTextArea textarea {
-        background-color: #1f2937 !important;
-        color: #f3f4f6 !important;
-        border: 1px solid #374151 !important;
-        border-radius: 8px !important;
+    .stTextInput>div>div>input, .stTextArea>div>div>textarea {
+        background-color: #1e293b;
+        color: #f8fafc;
+        border: 1px solid #334155;
+        border-radius: 8px;
     }
-    .stButton > button[kind="primary"] {
-        background: linear-gradient(135deg, #dc2626 0%, #991b1b 100%) !important;
-        color: #ffffff !important;
-        border: none !important;
-        border-radius: 8px !important;
-        font-weight: 700 !important;
-        transition: all 0.3s ease !important;
-        box-shadow: 0 4px 14px rgba(220, 38, 38, 0.4) !important;
-    }
-    .stButton > button[kind="primary"]:hover {
-        background: linear-gradient(135deg, #ef4444 0%, #b91c1c 100%) !important;
-        box-shadow: 0 6px 20px rgba(220, 38, 38, 0.6) !important;
-        transform: translateY(-2px);
-    }
-    div[data-testid="stBlock"] {
-        background-color: rgba(31, 41, 55, 0.5);
-        border-radius: 12px;
-        padding: 12px;
-        border: 1px solid #374151;
-    }
-    hr {
-        border-color: #374151 !important;
+    h1, h2, h3 {
+        color: #f1f5f9;
+        font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
     }
     </style>
 """, unsafe_allow_html=True)
 
-st.title("🎬 A & W Cinematic AI Studio Engine")
-st.caption("Professional Storytelling & Character Video Production: Masterminded by Eng. Ahmed El Naggar ❤️")
-
-st.markdown("---")
-
-# Initialize Session State
-if "generated_data" not in st.session_state:
-    st.session_state.generated_data = None
-
-# Dashboard Layout Controls
-col_top1, col_top2 = st.columns([2, 1])
-
-with col_top1:
-    project_title = st.text_input(
-        "🏷️ Cinematic Story / Project Title:", 
-        value="",
-        placeholder="e.g. Kunafa Masterclass or Newly Married Journey..."
-    )
-    
-    custom_script_input = st.text_area(
-        "📝 Paste Your Full Cinematic Script (with Scenes & Cues):",
-        value="",
-        height=220,
-        placeholder="Paste your rich narrative script here. Any bracketed tags like [Scene 1 - Morning] or [0:00-0:15] will be automatically filtered out from voiceover."
-    )
-
-with col_top2:
-    voice_options_map = {
-        "👨 US Male (Guy - Deep & Emotional)": "en-US-GuyNeural",
-        "👩 US Female (Jenny - Friendly & Warm)": "en-US-JennyNeural",
-        "👨 UK Male (Ryan - Clear & Professional)": "en-GB-RyanNeural",
-        "👩 UK Female (Sonia - Elegant & Expressive)": "en-GB-SoniaNeural"
-    }
-    
-    voice_option_label = st.selectbox(
-        "🎙️ Choose Narrator Voice Identity:",
-        list(voice_options_map.keys())
-    )
-    selected_voice_code = voice_options_map[voice_option_label]
-
-    video_format = st.radio(
-        "📱 Cinematic Aspect Ratio / Format:",
-        ["YouTube Short / Reel (9:16 Vertical)", "Cinematic Long Video (16:9 Horizontal)"],
-        horizontal=True
-    )
-
-col_mid1, col_mid2, col_mid3 = st.columns([1, 1, 1])
-
-with col_mid1:
-    enable_subtitles = st.checkbox("💬 Burn-in Cinematic Subtitles", value=True)
-
-with col_mid2:
-    enable_bg_music = st.checkbox("🎵 Soft Cinematic Background Music", value=True)
-
-with col_mid3:
-    use_avatar_fallback = st.checkbox("Use Smart Animated Narrator Avatar", value=True)
-
-st.markdown("---")
-st.subheader("🖼️ Custom Scene Assets & Character References (Optional)")
-uploaded_scene_files = st.file_uploader(
-    "Upload scene background images or character references in order (Jpg/Png):", 
-    type=["jpg", "jpeg", "png"], 
-    accept_multiple_files=True
-)
-
-st.markdown("---")
-
-col_action1, col_action2 = st.columns([3, 1])
-with col_action1:
-    generate_btn = st.button("🚀 Render Cinematic Story Video Now", type="primary", use_container_width=True)
-with col_action2:
-    if st.button("🔄 Reset Studio Project", use_container_width=True):
-        st.session_state.generated_data = None
-        st.rerun()
-
-# Regex Cleaner for Voiceover (Strips brackets, markdown asterisks, and timing metadata)
+# Regex Cleaner for Voiceover
 def clean_script_for_voiceover(raw_text):
     cleaned = re.sub(r'\[.*?\]', '', raw_text)
     cleaned = cleaned.replace('**', '').replace('*', '')
     cleaned = re.sub(r'\n\s*\n', '\n', cleaned)
     return cleaned.strip()
 
-# Smart Gender-Aware Animated Narrator Avatar Frame Generator
+# Smart Narrator Avatar Frame Generator
 def generate_narrator_avatar_frame(width, height, frame_count, voice_code):
     is_female = "Female" in voice_code or "Jenny" in voice_code or "Sonia" in voice_code
     img = Image.new("RGB", (width, height), color=(15, 23, 42))
     draw = ImageDraw.Draw(img)
-    
-    # Cinematic studio lighting
     draw.ellipse([width//2 - 300, -150, width//2 + 300, 350], fill=(30, 41, 59))
-    
     center_x = width // 2
     center_y = height // 2 - 80
     
@@ -172,11 +78,9 @@ def generate_narrator_avatar_frame(width, height, frame_count, voice_code):
         draw.ellipse([(center_x - 70, center_y - 30), (center_x + 70, center_y + 140)], fill=(254, 215, 170))
         draw.arc([(center_x - 72, center_y - 40), (center_x + 72, center_y + 60)], start=180, end=360, fill=(30, 41, 59), width=24)
 
-    # Eyes
     draw.ellipse([center_x - 32, center_y + 30, center_x - 12, center_y + 50], fill=(15, 23, 42))
     draw.ellipse([center_x + 12, center_y + 30, center_x + 32, center_y + 50], fill=(15, 23, 42))
     
-    # Talking mouth animation synced with frame loop
     mouth_open = (frame_count // 6) % 2 == 0
     if mouth_open:
         draw.ellipse([center_x - 18, center_y + 82, center_x + 18, center_y + 106], fill=(153, 27, 27))
@@ -185,10 +89,7 @@ def generate_narrator_avatar_frame(width, height, frame_count, voice_code):
     return img
 
 def fetch_royalty_free_music(output_path):
-    safe_audio_urls = [
-        "https://cdn.pixabay.com/download/audio/2022/05/27/audio_1808fbf07a.mp3",
-        "https://cdn.pixabay.com/download/audio/2022/03/15/audio_c8c8a73467.mp3"
-    ]
+    safe_audio_urls = ["https://cdn.pixabay.com/download/audio/2022/05/27/audio_1808fbf07a.mp3"]
     for url in safe_audio_urls:
         try:
             res = requests.get(url, timeout=8)
@@ -217,39 +118,69 @@ async def generate_human_voice(text, voice_code, output_file):
     communicate = edge_tts.Communicate(text, voice_code)
     await communicate.save(output_file)
 
-if generate_btn:
-    if not custom_script_input.strip():
-        st.warning("⚠️ Please paste your cinematic script in the text area above!")
-    else:
-        status_container = st.empty()
-        metric_container = st.empty()
-        progress_bar = st.progress(0)
-        
-        def update_progress(percent, text):
-            val = max(0, min(100, int(percent)))
-            progress_bar.progress(val)
-            metric_container.metric(label="📊 Production Progress", value=f"{val}%")
-            status_container.info(text)
+# Main App Layout
+st.title("🎬 A & W Cinematic AI Studio")
+st.markdown("Professional Storytelling & Character Video Production: Masterminded by Eng. Ahmed El Naggar ❤️")
 
+with st.sidebar:
+    st.header("⚙️ Studio Settings")
+    voice_choice = st.selectbox(
+        "🎙️ Narrator Voice",
+        ["US Male (Guy)", "US Female (Jenny)", "UK Male (Ryan)", "UK Female (Sonia)"]
+    )
+    format_choice = st.radio(
+        "📱 Aspect Ratio",
+        ["YouTube Short / Reel (9:16 Vertical)", "Cinematic Long Video (16:9 Horizontal)"]
+    )
+    enable_subs = st.checkbox("💬 Burn-in Subtitles", value=True)
+    enable_music = st.checkbox("🎵 Background Music", value=True)
+    use_avatar = st.checkbox("Use Smart Narrator Avatar", value=True)
+
+col1, col2 = st.columns([2, 1])
+
+with col1:
+    script_input = st.text_area(
+        "📝 Full Cinematic Script (with Scenes & Cues)",
+        height=220,
+        placeholder="Paste your full script here..."
+    )
+
+with col2:
+    uploaded_files = st.file_uploader(
+        "🖼️ Upload Scene Images / Character Assets",
+        type=["png", "jpg", "jpeg"],
+        accept_multiple_files=True
+    )
+
+if st.button("🚀 Render Cinematic Video", use_container_width=True):
+    if not script_input.strip():
+        st.error("⚠️ Please enter a script first!")
+    else:
+        status_box = st.status("🎬 Initializing Cinematic Studio Pipeline...", expanded=True)
+        
         try:
-            is_vertical = ("Vertical" in video_format)
+            voice_map = {
+                "US Male (Guy)": "en-US-GuyNeural",
+                "US Female (Jenny)": "en-US-JennyNeural",
+                "UK Male (Ryan)": "en-GB-RyanNeural",
+                "UK Female (Sonia)": "en-GB-SoniaNeural"
+            }
+            voice_code = voice_map.get(voice_choice, "en-US-GuyNeural")
+            
+            is_vertical = ("Vertical" in format_choice)
             width, height = (720, 1280) if is_vertical else (1280, 720)
             
-            raw_script = custom_script_input.strip()
-            project_title_str = project_title.strip() if project_title.strip() else "Cinematic Story"
-            voice_script = clean_script_for_voiceover(raw_script)
+            voice_script = clean_script_for_voiceover(script_input)
 
-            update_progress(15, f"🎙️ Step 1/3: Synthesizing professional voiceover ({selected_voice_code})...")
+            status_box.update(label="🎙️ Synthesizing Pro Voiceover...")
             audio_raw = "raw_human_voice.mp3"
             audio_final = "final_voice.mp3"
-            
-            asyncio.run(generate_human_voice(voice_script, selected_voice_code, audio_raw))
+            asyncio.run(generate_human_voice(voice_script, voice_code, audio_raw))
             subprocess.run(f"ffmpeg -y -i {audio_raw} -filter:a 'atempo=1.02' {audio_final}", shell=True, check=True)
 
             probe_cmd = f"ffprobe -v error -show_entries format=duration -of default=noprint_wrappers=1:nokey=1 {audio_final}"
             final_audio_dur = float(subprocess.check_output(probe_cmd, shell=True).decode('utf-8').strip())
             
-            update_progress(40, f"🎨 Step 2/3: Rendering cinematic video frames ({final_audio_dur:.1f}s)...")
             fps = 24
             total_frames = int(fps * final_audio_dur)
             video_no_audio = "temp_video.mp4"
@@ -257,24 +188,25 @@ if generate_btn:
             audio_combined = "combined_audio.mp3"
             final_mp4 = "final_generated_video.mp4"
 
+            status_box.update(label="🎞️ Rendering Video Frames & Avatar/Scenes...")
             fourcc = cv2.VideoWriter_fourcc(*'mp4v')
             out = cv2.VideoWriter(video_no_audio, fourcc, fps, (width, height))
 
-            # Process scene images if uploaded
             scene_images = []
-            if uploaded_scene_files:
-                for uf in uploaded_scene_files:
-                    img_pil = Image.open(uf).convert("RGB").resize((width, height))
+            if uploaded_files:
+                for uf in uploaded_files:
+                    img_bytes = uf.read()
+                    img_pil = Image.open(BytesIO(img_bytes)).convert("RGB").resize((width, height))
                     scene_images.append(img_pil)
 
             frames_per_scene = max(1, total_frames // len(scene_images)) if scene_images else total_frames
 
             for frame_num in range(total_frames):
-                if scene_images and not use_avatar_fallback:
+                if scene_images and not use_avatar:
                     scene_idx = min(frame_num // frames_per_scene, len(scene_images) - 1)
                     curr_img = scene_images[scene_idx]
                 else:
-                    curr_img = generate_narrator_avatar_frame(width, height, frame_num, selected_voice_code)
+                    curr_img = generate_narrator_avatar_frame(width, height, frame_num, voice_code)
 
                 frame_np = np.array(curr_img)
                 cv_bgr_frame = cv2.cvtColor(frame_np, cv2.COLOR_RGB2BGR)
@@ -282,9 +214,9 @@ if generate_btn:
 
             out.release()
 
-            update_progress(70, "🎵 Mixing background cinematic audio...")
             voice_to_use = audio_final
-            if enable_bg_music:
+            if enable_music:
+                status_box.update(label="🎵 Mixing Cinematic Background Music...")
                 bg_file = "bg_music.mp3"
                 if fetch_royalty_free_music(bg_file):
                     try:
@@ -293,9 +225,9 @@ if generate_btn:
                     except:
                         pass
 
-            update_progress(85, "🎥 Step 3/3: Burning cinematic dynamic subtitles...")
             video_to_merge = video_no_audio
-            if enable_subtitles:
+            if enable_subs:
+                status_box.update(label="💬 Burning Dynamic Subtitles...")
                 try:
                     chunks = split_script_into_chunks(voice_script, max_words=4)
                     srt_content = ""
@@ -316,38 +248,13 @@ if generate_btn:
                 except:
                     pass
 
-            update_progress(95, "📦 Packaging final cinematic video file...")
+            status_box.update(label="🚀 Finalizing & Multiplexing Video Output...")
             subprocess.run(f"ffmpeg -y -i {video_to_merge} -i {voice_to_use} -c:v libx264 -preset ultrafast -pix_fmt yuv420p -c:a aac -shortest {final_mp4}", shell=True, check=True)
 
-            update_progress(100, "🎉 Cinematic Production Complete!")
-            with open(final_mp4, "rb") as f:
-                video_bytes = f.read()
-
-            st.session_state.generated_data = {
-                "script": raw_script,
-                "video_bytes": video_bytes,
-                "is_short": is_vertical,
-                "topic": project_title_str,
-                "duration": final_audio_dur
-            }
+            status_box.update(label="✅ Render Complete!", state="complete")
+            st.success("🎉 Your cinematic masterpiece is ready!")
+            st.video(final_mp4)
 
         except Exception as e:
-            st.error(f"❌ Detailed Production Error: {str(e)}")
-
-if st.session_state.generated_data:
-    res = st.session_state.generated_data
-    st.markdown("---")
-    col1, col2 = st.columns([1, 1])
-    with col1:
-        st.subheader(f"📺 Final Video Output ({res['duration']:.1f}s)")
-        st.video(BytesIO(res["video_bytes"]))
-        st.download_button(
-            "⬇️ Download Cinematic MP4", 
-            res["video_bytes"], 
-            file_name=f"Cinematic_{res['topic'][:15].replace(' ', '_')}.mp4", 
-            mime="video/mp4", 
-            use_container_width=True
-        )
-    with col2:
-        st.subheader("📝 Project Master Script Reference")
-        st.text_area("Script:", res["script"], height=200)
+            status_box.update(label="❌ Render Failed!", state="error")
+            st.error(f"Error during rendering: {str(e)}")
