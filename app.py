@@ -12,7 +12,7 @@ from io import BytesIO
 
 # Page Configuration
 st.set_page_config(
-    page_title="A & W Cinematic Script Studio",
+    page_title="A & W Cinematic Studio",
     page_icon="🎬",
     layout="wide",
     initial_sidebar_state="expanded"
@@ -26,7 +26,7 @@ st.markdown("""
         color: #f8fafc;
     }
     .stButton>button {
-        background-color: #e11d48;
+        background: linear-gradient(135deg, #e11d48 0%, #9f1239 100%) !important;
         color: white;
         border-radius: 8px;
         font-weight: bold;
@@ -35,8 +35,8 @@ st.markdown("""
         transition: all 0.3s ease;
     }
     .stButton>button:hover {
-        background-color: #be123c;
-        box-shadow: 0 4px 12px rgba(225, 29, 72, 0.4);
+        background: linear-gradient(135deg, #f43f5e 0%, #be123c 100%) !important;
+        box-shadow: 0 4px 15px rgba(225, 29, 72, 0.5);
     }
     .stTextInput>div>div>input, .stTextArea>div>div>textarea {
         background-color: #1e293b;
@@ -51,61 +51,50 @@ st.markdown("""
     </style>
 """, unsafe_allow_html=True)
 
-# Smart Cinematic Script Parser (Extracts Scene Guidance & Spoken Text)
+# Parse Cinematic Scenes & Instructions
 def parse_cinematic_script(raw_text):
     scenes = []
-    # Split blocks by double newlines or Scene tags
-    raw_blocks = re.split(r'\n\s*\n', raw_text)
-    
-    for block in raw_blocks:
+    blocks = re.split(r'\n\s*\n', raw_text)
+    for block in blocks:
         if not block.strip():
             continue
-        
-        # Extract guidance inside brackets if any
         guidance_match = re.findall(r'\[(.*?)\]', block)
         guidance = " ".join(guidance_match) if guidance_match else "Cinematic Scene"
-        
-        # Clean spoken text (remove bracketed notes)
         spoken = re.sub(r'\[.*?\]', '', block).replace('**', '').replace('*', '').strip()
-        
         if spoken or guidance:
             scenes.append({
                 "guidance": guidance,
                 "spoken": spoken if spoken else guidance
             })
-            
     if not scenes:
         scenes = [{"guidance": "Opening Scene", "spoken": raw_text}]
     return scenes
 
 def clean_script_for_voiceover(scenes):
-    full_text = " ".join([sc["spoken"] for sc in scenes if sc["spoken"]])
-    return full_text
+    return " ".join([sc["spoken"] for sc in scenes if sc["spoken"]])
 
-# Generate Cinematic Scene Image based on Theme & Guidance
+# Generate Professional Visual Frame for each scene
 def generate_cinematic_frame(width, height, guidance_text, theme="Warm & Cozy"):
     if "warm" in theme.lower():
         bg_color = (35, 20, 10)
-        primary_accent = (234, 88, 12) # Warm Amber
+        primary_accent = (234, 88, 12) # Amber Gold
         text_color = (253, 230, 138)
-    elif "blood" in theme.lower() or "dark" in theme.lower():
+    elif "blood" in theme.lower():
         bg_color = (15, 23, 42)
         primary_accent = (225, 29, 72) # Blood Red
         text_color = (248, 250, 252)
     else:
         bg_color = (15, 23, 42)
-        primary_accent = (37, 99, 235) # Cinematic Blue
+        primary_accent = (37, 99, 235) # Blue
         text_color = (224, 242, 254)
 
     img = Image.new("RGB", (width, height), color=bg_color)
     draw = ImageDraw.Draw(img)
     
-    # Draw abstract cinematic shapes
     draw.ellipse([-150, -150, width + 150, height // 2], fill=primary_accent)
     draw.rectangle([40, height - 160, width - 40, height - 60], fill=(20, 24, 33))
     
-    # Draw Scene Guidance Text on Visual
-    display_text = f"SCENE: {guidance_text[:70]}"
+    display_text = f"SCENE: {guidance_text[:65]}"
     draw.rectangle([50, height // 2 - 45, width - 50, height // 2 + 45], fill=(0, 0, 0, 180))
     draw.text((70, height // 2 - 20), display_text, fill=text_color)
     
@@ -142,8 +131,8 @@ async def generate_voiceover(text, voice_code, output_file):
     await communicate.save(output_file)
 
 # Main App Layout
-st.title("🎬 A & W Cinematic Script Studio")
-st.markdown("Professional Cinematic Script-to-Video Engine: Ahmed El Naggar & Sem Sem ❤️")
+st.title("🎬 A & W Cinematic Studio Engine")
+st.markdown("Professional Storytelling & Character Video Production: Ahmed El Naggar & Sem Sem ❤️")
 
 with st.sidebar:
     st.header("⚙️ Studio Settings")
@@ -166,23 +155,23 @@ col1, col2 = st.columns([2, 1])
 
 with col1:
     script_input = st.text_area(
-        "📝 Enter Cinematic Script (with [Scene Guidance])",
+        "📝 Enter Cinematic Story / Prompt (with [Scene Guidance]):",
         height=260,
-        placeholder="Example:\n[Scene 1: Warm morning sunlight hitting a quiet desk]\nWelcome to our journey of creation and success.\n\n[Scene 2: Transition to a modern architectural blueprint]\nEvery great project starts with a clear and structured plan."
+        placeholder="Example:\n[Scene 1: Morning routine inside a cozy Egyptian home]\nEarly morning inside the couple's home...\n\n[Scene 2: Alfa Lab visit for the pregnancy result]\nHe stops at Alfa Lab to collect the test result..."
     )
 
 with col2:
     uploaded_files = st.file_uploader(
-        "🖼️ Upload Custom Scene Images (Optional)",
+        "🖼️ Upload Reference/Scene Images (Optional)",
         type=["png", "jpg", "jpeg"],
         accept_multiple_files=True
     )
 
-if st.button("🚀 Render Cinematic Video from Script", use_container_width=True):
+if st.button("🚀 Render Cinematic Story Video", use_container_width=True):
     if not script_input.strip():
-        st.error("⚠️ Please enter a cinematic script first!")
+        st.error("⚠️ Please enter your story script first!")
     else:
-        status_box = st.status("🎬 Parsing Script & Initializing Pipeline...", expanded=True)
+        status_box = st.status("🎬 Initializing Local Cinematic Pipeline...", expanded=True)
         
         try:
             voice_map = {
@@ -196,7 +185,6 @@ if st.button("🚀 Render Cinematic Video from Script", use_container_width=True
             is_vertical = ("Vertical" in format_choice)
             width, height = (720, 1280) if is_vertical else (1280, 720)
             
-            # Parse Script into Scenes
             parsed_scenes = parse_cinematic_script(script_input)
             voice_script = clean_script_for_voiceover(parsed_scenes)
 
@@ -216,11 +204,10 @@ if st.button("🚀 Render Cinematic Video from Script", use_container_width=True
             audio_combined = "combined_audio.mp3"
             final_mp4 = "final_generated_video.mp4"
 
-            status_box.update(label="🎞️ Rendering Scene-by-Scene Visuals...")
+            status_box.update(label="🎞️ Rendering Scene-by-Scene Visual Timeline...")
             fourcc = cv2.VideoWriter_fourcc(*'mp4v')
             out = cv2.VideoWriter(video_no_audio, fourcc, fps, (width, height))
 
-            # Load uploaded asset images if provided
             user_images = []
             if uploaded_files:
                 for uf in uploaded_files:
@@ -228,13 +215,11 @@ if st.button("🚀 Render Cinematic Video from Script", use_container_width=True
                     img_pil = Image.open(BytesIO(img_bytes)).convert("RGB").resize((width, height))
                     user_images.append(img_pil)
 
-            # Distribute frames proportionally across parsed scenes
             frames_per_scene = max(1, total_frames // len(parsed_scenes))
 
             for idx, scene in enumerate(parsed_scenes):
                 scene_frame_count = frames_per_scene if idx < len(parsed_scenes) - 1 else (total_frames - (frames_per_scene * idx))
                 
-                # Pick image source: User uploaded or generated cinematic frame
                 if user_images and idx < len(user_images):
                     base_img = user_images[idx]
                 else:
@@ -249,7 +234,7 @@ if st.button("🚀 Render Cinematic Video from Script", use_container_width=True
 
             audio_to_merge = audio_final
             if enable_music:
-                status_box.update(label="🎵 Mixing Background Music...")
+                status_box.update(label="🎵 Mixing Cinematic Background Music...")
                 bg_file = "bg_music.mp3"
                 if fetch_royalty_free_music(bg_file):
                     try:
@@ -281,11 +266,12 @@ if st.button("🚀 Render Cinematic Video from Script", use_container_width=True
                 except:
                     pass
 
-            status_box.update(label="🚀 Finalizing Cinematic Output...")
+### 4. Final Output Generation
+            status_box.update(label="🚀 Finalizing Video Output...")
             subprocess.run(f"ffmpeg -y -i {video_to_merge} -i {audio_to_merge} -c:v libx264 -preset ultrafast -pix_fmt yuv420p -c:a aac -shortest {final_mp4}", shell=True, check=True)
 
             status_box.update(label="✅ Render Complete!", state="complete")
-            st.success("🎉 Your cinematic script-to-video masterpiece is ready!")
+            st.success("🎉 Your cinematic story video is successfully generated!")
             st.video(final_mp4)
 
         except Exception as e:
